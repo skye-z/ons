@@ -11,50 +11,44 @@ import (
 	"github.com/pion/webrtc/v3"
 )
 
+// 消息模型
 type Message struct {
 	Event string          `json:"event"`
-	Data  json.RawMessage `json:"data"` // 修改类型为 json.RawMessage
+	Data  json.RawMessage `json:"data"`
 	To    string          `json:"to,omitempty"`
 	From  string          `json:"from,omitempty"`
 }
 
-type WebRTCServer struct {
-	peerID    string
-	signaling *websocket.Conn
+type P2PServer struct {
+	peerID  string
+	connect *websocket.Conn
+	p2p     *webrtc.PeerConnection
 }
 
-func NewWebRTCServer(peerID string, signalingURL string) *WebRTCServer {
-	// Connect to signaling server
-	u := url.URL{Scheme: "ws", Host: signalingURL, Path: "/ws"}
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+// 第一步 创建 P2P 服务
+func NewP2PServer(peerID string, signalingURL string) *P2PServer {
+	path := url.URL{Scheme: "ws", Host: signalingURL, Path: "/ws"}
+	connect, _, err := websocket.DefaultDialer.Dial(path.String(), nil)
 	if err != nil {
 		log.Fatal("dial:", err)
 	}
 
-	server := &WebRTCServer{
-		peerID:    peerID,
-		signaling: c,
+	server := &P2PServer{
+		peerID:  peerID,
+		connect: connect,
 	}
-
-	go server.handleSignalingMessages()
+	// 第二步 监听请求
+	go server.handleMessages()
+	// 第三步 注册 NSB
 	server.register()
 
 	return server
 }
 
-// Register peer to signaling server
-func (s *WebRTCServer) register() {
-	message := Message{
-		Event: "register",
-		Data:  json.RawMessage(`"` + s.peerID + `"`), // 确保发送的数据是字符串形式
-	}
-	s.sendMessage(message)
-}
-
-// 处理来自信令服务器的消息
-func (s *WebRTCServer) handleSignalingMessages() {
+// 第二步 监听请求
+func (s *P2PServer) handleMessages() {
 	for {
-		_, msgBytes, err := s.signaling.ReadMessage()
+		_, msgBytes, err := s.connect.ReadMessage()
 		if err != nil {
 			log.Println("read:", err)
 			return
@@ -69,29 +63,43 @@ func (s *WebRTCServer) handleSignalingMessages() {
 		case "p2p-exchange":
 			signalData := webrtc.SessionDescription{}
 			if err := json.Unmarshal(msg.Data, &signalData); err != nil {
-				log.Printf("Failed to unmarshal signal data: %v", err)
+				log.Printf("无法解析连接信息: %v", err)
 				continue
 			}
 			log.Printf("收到 %s 发来的连接信息", msg.From)
 			if signalData.Type == webrtc.SDPTypeOffer {
-				s.handleSDPOffer(signalData, msg.From)
+				s.setP2PInfo(signalData)
 			}
 		case "p2p-node":
-			log.Printf("123 %v", msg)
+			nodeData := webrtc.ICECandidateInit{}
+			if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
+				log.Printf("无法解析节点信息: %v", err)
+				continue
+			}
+			s.setP2PNode(nodeData)
 		default:
 			log.Printf("Unknown message event: %s", msg.Event)
 		}
 	}
 }
 
-// Send signaling message to signaling server
-func (s *WebRTCServer) sendMessage(message Message) {
-	msgBytes, _ := json.Marshal(message)
-	s.signaling.WriteMessage(websocket.TextMessage, msgBytes)
+// 第三步 注册 NSB
+func (s *P2PServer) register() {
+	message := Message{
+		Event: "register",
+		Data:  json.RawMessage(`"` + s.peerID + `"`),
+	}
+	s.sendMessage(message)
 }
 
-func (s *WebRTCServer) handleSDPOffer(offer webrtc.SessionDescription, sender string) {
-	// 使用 pion/webrtc 创建一个新的 PeerConnection
+// [工具] 发送消息
+func (s *P2PServer) sendMessage(message Message) {
+	msgBytes, _ := json.Marshal(message)
+	s.connect.WriteMessage(websocket.TextMessage, msgBytes)
+}
+
+// 设置对等连接信息
+func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 	peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
 			{
@@ -105,38 +113,54 @@ func (s *WebRTCServer) handleSDPOffer(offer webrtc.SessionDescription, sender st
 	if err != nil {
 		log.Fatalf("Failed to create PeerConnection: %v", err)
 	}
-
-	// 设置远端描述 (offer)
-	if err := peerConnection.SetRemoteDescription(offer); err != nil {
+	s.p2p = peerConnection
+	// 设置 NSC 连接信息
+	if err := peerConnection.SetRemoteDescription(data); err != nil {
 		log.Printf("Failed to set remote description: %v", err)
 	}
-
-	// 创建 Answer
+	log.Println("NSC 连接已设置")
+	// 创建 NSB 本地连接信息
 	answer, err := peerConnection.CreateAnswer(nil)
 	if err != nil {
 		log.Printf("Failed to create answer: %v", err)
 	}
-
-	// 设置本地描述 (answer)
+	// 设置本地连接信息
 	gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
-
 	if err := peerConnection.SetLocalDescription(answer); err != nil {
 		log.Fatalf("Failed to set local description: %v", err)
 	}
 
-	// 等待 ICE Gathering 完成
+	// 等待 ICE 采集完成
 	<-gatherComplete
 
-	// 发送 answer 回信令服务器
-	answerData := map[string]interface{}{
+	// 监控节点更新
+	peerConnection.OnICECandidate(func(candidate *webrtc.ICECandidate) {
+		if candidate == nil {
+			return
+		}
+		candidateJSON := candidate.ToJSON()
+		jsonBytes, err := json.Marshal(candidateJSON)
+		if err != nil {
+			log.Println("JSON 序列化错误:", err)
+			return
+		}
+		log.Printf("向 NSC 发送节点信息")
+		answerMsg := Message{
+			Event: "p2p-node",
+			Data:  json.RawMessage(jsonBytes),
+			To:    s.peerID,
+			From:  "NSB",
+		}
+		s.sendMessage(answerMsg)
+	})
+
+	// 发送本地连接信息
+	answerDataBytes, err := json.Marshal(map[string]interface{}{
 		"sdp": map[string]interface{}{
 			"type": "answer",
 			"sdp":  peerConnection.LocalDescription().SDP,
 		},
-	}
-
-	// 将 answerData 编码为 JSON
-	answerDataBytes, err := json.Marshal(answerData)
+	})
 	if err != nil {
 		log.Fatalf("Failed to marshal answer data: %v", err)
 	}
@@ -144,19 +168,27 @@ func (s *WebRTCServer) handleSDPOffer(offer webrtc.SessionDescription, sender st
 	answerMsg := Message{
 		Event: "p2p-exchange",
 		Data:  json.RawMessage(answerDataBytes),
-		To:    s.peerID, // 回复给原始 offer 发送者
+		To:    s.peerID,
 		From:  "NSB",
 	}
 	s.sendMessage(answerMsg)
 }
 
-func main() {
-	server := NewWebRTCServer("749601", "192.168.1.160:8080")
+// 设置节点信息
+func (s *P2PServer) setP2PNode(data webrtc.ICECandidateInit) {
+	log.Println("应用 NSC 节点信息")
+	err := s.p2p.AddICECandidate(data)
+	if err != nil {
+		log.Fatalf("设置节点信息出错: %v", err)
+	}
+}
 
-	// Handle graceful shutdown
+func main() {
+	server := NewP2PServer("749601", "192.168.1.160:8080")
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
 
-	server.signaling.Close()
+	server.connect.Close()
 }

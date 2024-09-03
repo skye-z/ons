@@ -171,13 +171,13 @@ func handleClientMessage(ws *websocket.Conn, message []byte) {
 func forwardSignal(msg Message) {
 	var targetPeer *websocket.Conn
 	var peerExists bool
-	if msg.From == "NSB" {
-		log.Printf("发送本地连接信息给 #%s NSB", msg.To)
+	if msg.From == "NSC" {
+		log.Printf("转发信息给 #%s NSB", msg.To)
 		mu.Lock()
 		targetPeer, peerExists = peers[msg.To]
 		mu.Unlock()
-	} else if msg.From == "NSC" {
-		log.Printf("发送#%s NSB连接信息给 NSC", msg.To)
+	} else if msg.From == "NSB" {
+		log.Printf("转发#%s NSB 信息给 NSC", msg.To)
 		mu.Lock()
 		targetPeer, peerExists = clientPeers[msg.To]
 		mu.Unlock()
@@ -195,7 +195,7 @@ func forwardSignal(msg Message) {
 			log.Printf("已将 %s 连接信息发送至 %s", msg.From, msg.To)
 		}
 	} else {
-		log.Printf("Peer %s not found", msg.To)
+		log.Printf("连接对象 %s 不存在", msg.To)
 	}
 }
 
