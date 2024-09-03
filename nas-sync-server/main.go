@@ -66,22 +66,18 @@ func (s *WebRTCServer) handleSignalingMessages() {
 		}
 
 		switch msg.Event {
-		case "webrtc-signal":
-			var signalData map[string]interface{} // 使用 map[string]interface{} 解析信令数据
+		case "p2p-exchange":
+			signalData := webrtc.SessionDescription{}
 			if err := json.Unmarshal(msg.Data, &signalData); err != nil {
 				log.Printf("Failed to unmarshal signal data: %v", err)
 				continue
 			}
-
-			if sdpMap, ok := signalData["sdp"].(map[string]interface{}); ok {
-				if sdp, ok := sdpMap["sdp"].(string); ok {
-					if sdpType, ok := sdpMap["type"].(string); ok && sdpType == "offer" {
-						log.Printf("Received SDP offer: %v", sdp)
-						s.handleSDPOffer(sdp, msg.From) // 添加 msg.From 参数以用于回答
-					}
-				}
+			log.Printf("收到 %s 发来的连接信息", msg.From)
+			if signalData.Type == webrtc.SDPTypeOffer {
+				s.handleSDPOffer(signalData, msg.From)
 			}
-
+		case "p2p-node":
+			log.Printf("123 %v", msg)
 		default:
 			log.Printf("Unknown message event: %s", msg.Event)
 		}
@@ -94,10 +90,13 @@ func (s *WebRTCServer) sendMessage(message Message) {
 	s.signaling.WriteMessage(websocket.TextMessage, msgBytes)
 }
 
-func (s *WebRTCServer) handleSDPOffer(offerSDP string, sender string) {
+func (s *WebRTCServer) handleSDPOffer(offer webrtc.SessionDescription, sender string) {
 	// 使用 pion/webrtc 创建一个新的 PeerConnection
 	peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
+			{
+				URLs: []string{"stun:stun.l.google.com:19302"},
+			},
 			{
 				URLs: []string{"stun:stun.nextcloud.com:443"},
 			},
@@ -108,19 +107,14 @@ func (s *WebRTCServer) handleSDPOffer(offerSDP string, sender string) {
 	}
 
 	// 设置远端描述 (offer)
-	offer := webrtc.SessionDescription{
-		Type: webrtc.SDPTypeOffer,
-		SDP:  offerSDP,
-	}
-	log.Printf("Received SDP offer: %v", offerSDP)
 	if err := peerConnection.SetRemoteDescription(offer); err != nil {
-		log.Fatalf("Failed to set remote description: %v", err)
+		log.Printf("Failed to set remote description: %v", err)
 	}
 
 	// 创建 Answer
 	answer, err := peerConnection.CreateAnswer(nil)
 	if err != nil {
-		log.Fatalf("Failed to create answer: %v", err)
+		log.Printf("Failed to create answer: %v", err)
 	}
 
 	// 设置本地描述 (answer)
@@ -148,10 +142,10 @@ func (s *WebRTCServer) handleSDPOffer(offerSDP string, sender string) {
 	}
 
 	answerMsg := Message{
-		Event: "webrtc-signal",
+		Event: "p2p-exchange",
 		Data:  json.RawMessage(answerDataBytes),
-		To:    sender, // 回复给原始 offer 发送者
-		From:  s.peerID,
+		To:    s.peerID, // 回复给原始 offer 发送者
+		From:  "NSB",
 	}
 	s.sendMessage(answerMsg)
 }

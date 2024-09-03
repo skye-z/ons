@@ -19,9 +19,10 @@ var (
 		WriteBufferSize: 1024,
 		CheckOrigin:     func(r *http.Request) bool { return true },
 	}
-	peers   = make(map[string]*websocket.Conn) // 用唯一编号注册的 Peer 连接
-	clients = make(map[*websocket.Conn]string) // 客户端连接与其目标Peer的编号映射
-	mu      sync.Mutex
+	peers       = make(map[string]*websocket.Conn) // 用唯一编号注册的 Peer 连接
+	clients     = make(map[*websocket.Conn]string) // 客户端连接与其目标Peer的编号映射
+	clientPeers = make(map[string]*websocket.Conn)
+	mu          sync.Mutex
 )
 
 type Message struct {
@@ -76,10 +77,9 @@ func handleConnections(c *gin.Context) {
 
 // 注册 Peer (服务器B)
 func registerPeer(ws *websocket.Conn, peerID string) {
-	log.Printf("Registering server (peer): %s", peerID)
+	log.Printf("注册 NSB: %s", peerID)
 	mu.Lock()
 	peers[peerID] = ws
-	log.Printf("Current peers map after registration: %v", peers) // Debug line
 	mu.Unlock()
 
 	defer func() {
@@ -111,7 +111,7 @@ func registerPeer(ws *websocket.Conn, peerID string) {
 
 // 注册客户端
 func registerClient(ws *websocket.Conn, firstMessage []byte) {
-	log.Println("Registering client")
+	log.Println("注册 NSC")
 	clientID := "" // 在此获取或生成一个客户端ID
 
 	defer func() {
@@ -148,49 +148,51 @@ func handleClientMessage(ws *websocket.Conn, message []byte) {
 	if msg.Event == "connect" && msg.To != "" {
 		mu.Lock()
 		clients[ws] = msg.To
+		clientPeers[msg.To] = ws
 		mu.Unlock()
 
 		// 发送确认消息给客户端
 		confirmationMsg := Message{
-			Event: "connect-confirmation",
-			Data:  json.RawMessage(`"Connected to peer ` + msg.To + `"`),
+			Event: "connect",
+			Data:  json.RawMessage(`"准许连接 #` + msg.To + ` NSB"`),
 		}
 		msgBytes, _ := json.Marshal(confirmationMsg)
 		if err := ws.WriteMessage(websocket.TextMessage, msgBytes); err != nil {
 			log.Printf("Failed to send confirmation to client: %v", err)
 		} else {
-			log.Printf("Sent connect confirmation to client for peer %s", msg.To)
+			log.Printf("NSC 申请连接 #%s NSB", msg.To)
 		}
-	}
-
-	// 转发信令消息
-	if msg.Event == "webrtc-signal" {
+	} else if msg.Event == "p2p-exchange" || msg.Event == "p2p-node" {
 		forwardSignal(msg)
 	}
 }
 
 // 转发信令消息
 func forwardSignal(msg Message) {
-	log.Printf("Attempting to forward signal to peer: %s", msg.To) // Debug line
-
-	mu.Lock()
-	targetPeer, peerExists := peers[msg.To]
-	log.Printf("Current peers map in forwardSignal: %v", peers) // Debug line
-	mu.Unlock()
+	var targetPeer *websocket.Conn
+	var peerExists bool
+	if msg.From == "NSB" {
+		log.Printf("发送本地连接信息给 #%s NSB", msg.To)
+		mu.Lock()
+		targetPeer, peerExists = peers[msg.To]
+		mu.Unlock()
+	} else if msg.From == "NSC" {
+		log.Printf("发送#%s NSB连接信息给 NSC", msg.To)
+		mu.Lock()
+		targetPeer, peerExists = clientPeers[msg.To]
+		mu.Unlock()
+	}
 
 	if peerExists {
-		// 将整个 Message 对象转换为 JSON 字符串
 		msgBytes, err := json.Marshal(msg)
 		if err != nil {
 			log.Printf("Failed to marshal message: %v", err)
 			return
 		}
-
-		// 发送整个 JSON 对象
 		if err := targetPeer.WriteMessage(websocket.TextMessage, msgBytes); err != nil {
 			log.Printf("Failed to forward signal to peer %s: %v", msg.To, err)
 		} else {
-			log.Printf("Forwarded signal from %s to peer %s", msg.From, msg.To)
+			log.Printf("已将 %s 连接信息发送至 %s", msg.From, msg.To)
 		}
 	} else {
 		log.Printf("Peer %s not found", msg.To)
