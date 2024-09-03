@@ -66,7 +66,6 @@ func (s *P2PServer) handleMessages() {
 				log.Printf("无法解析连接信息: %v", err)
 				continue
 			}
-			log.Printf("收到 %s 发来的连接信息", msg.From)
 			if signalData.Type == webrtc.SDPTypeOffer {
 				s.setP2PInfo(signalData)
 			}
@@ -144,7 +143,6 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 			log.Println("JSON 序列化错误:", err)
 			return
 		}
-		log.Printf("向 NSC 发送节点信息")
 		answerMsg := Message{
 			Event: "p2p-node",
 			Data:  json.RawMessage(jsonBytes),
@@ -176,7 +174,6 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 
 // 设置节点信息
 func (s *P2PServer) setP2PNode(data webrtc.ICECandidateInit) {
-	log.Println("应用 NSC 节点信息")
 	err := s.p2p.AddICECandidate(data)
 	if err != nil {
 		log.Fatalf("设置节点信息出错: %v", err)

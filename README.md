@@ -1,7 +1,11 @@
 # Obsidian NAS 同步服务
 
-## 定义
+## 项目结构
 
-* NSA: 服务器A, 作为信令和中转服务器
-* NAB: 服务器B, 部署在NAS中作为接收方
-* NSC: 客户端C
+* Cloud Server: 简称`NSA`, 整个服务体系的中控服务器, 负责`NAB`与`NSC`连接尚未建立时的数据交换、通道管理、鉴权
+* NAS Server: 简称 NAB, 数据存储服务器, 负责存储`Obsidian`中的数据并与其他客户端进行同步
+* Obsidian Plugin: 简称 NSC, 最终客户端, 与`NAB`同步数据
+
+## 网络拓扑
+
+![](docs/image/network.png)

@@ -1,0 +1,22 @@
+# vscode
+.vscode 
+
+# Intellij
+*.iml
+.idea
+
+# npm
+node_modules
+
+# macOS
+.DS_Store
+
+# 编译产物
+main.js
+*.map
+data.json
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
