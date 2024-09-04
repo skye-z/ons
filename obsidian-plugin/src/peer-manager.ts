@@ -139,4 +139,9 @@ export class PeerManager {
     this.channel.send('文件数据')
   }
 
+	close(){
+		this.channel.close()
+    this.p2pCon.close()
+    this.nsa.close()
+	}
 }

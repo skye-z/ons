@@ -58,10 +58,20 @@ export class NSSettingTab extends PluginSettingTab {
 			.setName('穿透标识')
 			.setDesc('NAS 中的唯一标识, 让你能在穿透服务器中找到你的 NAS')
 			.addText(text => text
-				.setPlaceholder('#000000')
+				.setPlaceholder('000000')
 				.setValue(this.plugin.settings.devId)
 				.onChange(async (value) => {
 					this.plugin.settings.devId = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('连接密码')
+			.setDesc('NAS 中的设置的密码, NAS 会判断密码来决定是否建立连接')
+			.addText(text => text
+				.setPlaceholder('8-24位')
+				.setValue(this.plugin.settings.pwd)
+				.onChange(async (value) => {
+					this.plugin.settings.pwd = value;
 					await this.plugin.saveSettings();
 				}));
 	}
