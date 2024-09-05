@@ -56,13 +56,12 @@ func (s *P2PServer) handleMessages() {
 	for {
 		_, msgBytes, err := s.connect.ReadMessage()
 		if err != nil {
-			log.Println("read:", err)
+			log.Println("[P2P] read:", err)
 			return
 		}
 		var msg Message
 		if err := json.Unmarshal(msgBytes, &msg); err != nil {
-			log.Println(len(msgBytes))
-			log.Println("unmarshal:", err)
+			log.Println("[P2P] unmarshal:", err)
 			continue
 		}
 
@@ -70,7 +69,7 @@ func (s *P2PServer) handleMessages() {
 		case "p2p-exchange":
 			signalData := webrtc.SessionDescription{}
 			if err := json.Unmarshal(msg.Data, &signalData); err != nil {
-				log.Printf("无法解析连接信息: %v", err)
+				log.Printf("[P2P] unable to parse connection information: %v", err)
 				continue
 			}
 			if signalData.Type == webrtc.SDPTypeOffer {
@@ -79,16 +78,16 @@ func (s *P2PServer) handleMessages() {
 		case "p2p-node":
 			nodeData := webrtc.ICECandidateInit{}
 			if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
-				log.Printf("无法解析节点信息: %v", err)
+				log.Printf("[P2P] unable to parse node information: %v", err)
 				continue
 			}
 			s.setP2PNode(nodeData)
 		case "online":
 			log.Println("[P2P] connection successful")
 		case "error":
-			log.Printf("连接失败: %v", string(msg.Data))
+			log.Printf("[P2P] connect failed: %v", string(msg.Data))
 		default:
-			log.Printf("Unknown message event: %s", msg.Event)
+			log.Printf("[P2P] Unknown message event: %s", msg.Event)
 		}
 	}
 }
@@ -110,14 +109,14 @@ func (s *P2PServer) reconnect(host string) {
 			path := url.URL{Scheme: "ws", Host: host, Path: "/nat"}
 			connect, _, err := websocket.DefaultDialer.Dial(path.String(), nil)
 			if err != nil {
-				log.Println("尝试重新连接失败:", err)
+				log.Println("[P2P] attempt to reconnect failed:", err)
 				continue
 			}
 			s.connect = connect
-			log.Println("成功重新连接")
+			log.Println("[P2P] successfully reconnected")
 			go s.handleMessages() // 重启消息处理
 		}
-		log.Println("检查连接状态:", t)
+		log.Println("[P2P] check connection status:", t)
 	}
 }
 
@@ -146,19 +145,19 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 		},
 	})
 	if err != nil {
-		log.Fatalf("Failed to create PeerConnection: %v", err)
+		log.Fatalf("[P2P] Failed to create PeerConnection: %v", err)
 	}
 	s.p2p = peerConnection
 	// 设置 NSC 连接信息
 	if err := s.p2p.SetRemoteDescription(data); err != nil {
-		log.Printf("Failed to set remote description: %v", err)
+		log.Printf("[P2P] Failed to set remote description: %v", err)
 	}
-	log.Println("NSC 连接已设置")
+	log.Println("[P2P] NSC connection has been set up")
 	// 处理 ICE 候选队列
 	for _, candidate := range s.iceCandidateQueue {
 		err := s.p2p.AddICECandidate(candidate)
 		if err != nil {
-			log.Printf("添加候选失败: %v", err)
+			log.Printf("[P2P] node addition failed: %v", err)
 		}
 	}
 	// 清空候选队列
@@ -166,12 +165,11 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 	// 创建 NSB 本地连接信息
 	answer, err := s.p2p.CreateAnswer(nil)
 	if err != nil {
-		log.Printf("Failed to create answer: %v", err)
+		log.Printf("[P2P] Failed to create answer: %v", err)
 	}
 	// 设置本地连接信息
-	// gatherComplete := webrtc.GatheringCompletePromise(s.p2p)
 	if err := s.p2p.SetLocalDescription(answer); err != nil {
-		log.Fatalf("Failed to set local description: %v", err)
+		log.Fatalf("[P2P] Failed to set local description: %v", err)
 	}
 
 	// 发送本地连接信息
@@ -182,7 +180,7 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 		},
 	})
 	if err != nil {
-		log.Fatalf("Failed to marshal answer data: %v", err)
+		log.Fatalf("[P2P] Failed to marshal answer data: %v", err)
 	}
 
 	answerMsg := Message{
@@ -192,9 +190,6 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 		From:  "NSB",
 	}
 	s.sendMessage(answerMsg)
-
-	// 等待 ICE 采集完成
-	// <-gatherComplete
 
 	// 监控节点更新
 	s.p2p.OnICECandidate(func(candidate *webrtc.ICECandidate) {
@@ -216,44 +211,32 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 		s.sendMessage(mgs)
 	})
 
-	// 监听 ICE 连接状态的变化
-	s.p2p.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
-		log.Printf("ICE Connection State has changed: %s\n", connectionState.String())
-
-		if connectionState == webrtc.ICEConnectionStateConnected {
-			log.Println("P2P连接已建立")
-		} else if connectionState == webrtc.ICEConnectionStateFailed {
-			log.Println("P2P连接失败")
-		} else if connectionState == webrtc.ICEConnectionStateDisconnected {
-			log.Println("P2P连接已断开")
-		}
-	})
-
 	// 创建数据通道
 	dataChannel, err := s.p2p.CreateDataChannel("NSChanel", nil)
 	if err != nil {
-		log.Fatalf("Failed to create data channel: %v", err)
+		log.Fatalf("[P2P] Failed to create data channel: %v", err)
 	}
 	log.Println("[P2P] data channel created")
 
-	dataChannel.OnOpen(func() {
-		log.Println("[P2P] data channel open")
-		err := dataChannel.SendText("Hello from Go!")
-		if err != nil {
-			log.Println("[P2P] Error sending initial message:", err)
-		}
-	})
+	s.p2p.OnDataChannel(func(channel *webrtc.DataChannel) {
+		channel.OnOpen(func() {
+			log.Println("[P2P] data channel open")
+			err := dataChannel.SendText("Hello from Go!")
+			if err != nil {
+				log.Println("[P2P] Error sending initial message:", err)
+			}
+		})
 
-	dataChannel.OnClose(func() {
-		log.Println("[P2P] data channel close")
-	})
+		channel.OnClose(func() {
+			log.Println("[P2P] data channel close")
+		})
 
-	dataChannel.OnError(func(err error) {
-		log.Printf("[P2P] data channel error: %s", err.Error())
-	})
-
-	dataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
-		log.Printf("Received message: %s\n", msg.Data)
+		channel.OnError(func(err error) {
+			log.Printf("[P2P] data channel error: %s", err.Error())
+		})
+		channel.OnMessage(func(msg webrtc.DataChannelMessage) {
+			log.Printf("[Channel] received message: %s", string(msg.Data))
+		})
 	})
 }
 
