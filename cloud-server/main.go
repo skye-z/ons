@@ -20,7 +20,7 @@ func main() {
 	// 定义一个命令行参数
 	debug := flag.Bool("debug", false, "output debug logs")
 	// 定义一个命令行参数
-	port := flag.Int("port", 9800, "the port to listen on")
+	port := flag.Int("port", 9891, "the port to listen on")
 	// 解析命令行参数
 	flag.Parse()
 	// 初始化路由器
