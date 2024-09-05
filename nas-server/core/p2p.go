@@ -21,10 +21,11 @@ type Message struct {
 }
 
 type P2PServer struct {
-	natId   string
-	connect *websocket.Conn
-	p2p     *webrtc.PeerConnection
-	ticker  *time.Ticker
+	natId             string
+	connect           *websocket.Conn
+	p2p               *webrtc.PeerConnection
+	ticker            *time.Ticker
+	iceCandidateQueue []webrtc.ICECandidateInit
 }
 
 // 第一步 创建 P2P 服务
@@ -153,6 +154,15 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 		log.Printf("Failed to set remote description: %v", err)
 	}
 	log.Println("NSC 连接已设置")
+	// 处理 ICE 候选队列
+	for _, candidate := range s.iceCandidateQueue {
+		err := s.p2p.AddICECandidate(candidate)
+		if err != nil {
+			log.Printf("添加候选失败: %v", err)
+		}
+	}
+	// 清空候选队列
+	s.iceCandidateQueue = nil
 	// 创建 NSB 本地连接信息
 	answer, err := s.p2p.CreateAnswer(nil)
 	if err != nil {
@@ -250,6 +260,8 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 // 设置节点信息
 func (s *P2PServer) setP2PNode(data webrtc.ICECandidateInit) {
 	if s.p2p == nil {
+		// 如果 PeerConnection 还未准备好，先缓存候选
+		s.iceCandidateQueue = append(s.iceCandidateQueue, data)
 		return
 	}
 	err := s.p2p.AddICECandidate(data)
