@@ -81,7 +81,7 @@ func (as AuthService) Callback(ctx *gin.Context) {
 		ctx.Redirect(http.StatusTemporaryRedirect, "/app/auth?state=3")
 		return
 	} else if user == nil {
-		if util.GetBool("base.register") {
+		if util.GetBool("basic.register") {
 			user = &model.User{
 				GId:      info.Id,
 				Avatar:   info.Avatar,
@@ -187,7 +187,7 @@ func GenerateToken(id int64) (string, int64, error) {
 		jwt.MapClaims{
 			"exp": exp,
 			"iss": IssuerName,
-			"sub": id,
+			"sub": fmt.Sprintf("%v", id),
 		},
 	)
 	key, _ := base64.StdEncoding.DecodeString(secret)

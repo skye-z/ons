@@ -1,0 +1,11 @@
+{
+  "common": {
+    "fontWeightStrong": "600",
+    "primaryColor": "#0296a1",
+    "primaryColorHover": "#25D8E4FF",
+    "primaryColorPressed": "#08BECBFF",
+    "primaryColorSuppl": "#25D8E4FF",
+    "dividerColor": "#cacacaFF",
+    "borderRadius": "8px"
+  }
+}

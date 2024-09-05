@@ -12,6 +12,7 @@ node_modules
 .DS_Store
 
 # 编译产物
+dist
 main.js
 *.map
 data.json

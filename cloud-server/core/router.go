@@ -64,6 +64,7 @@ func BuildRouter(release bool, port int, host, cert, key string, engine *xorm.En
 	router.Object.StaticFS("/app", http.FS(appPage))
 
 	ds := CreateDeviceService(engine)
+	us := CreateUserService(engine)
 	ps := CreateP2PService(engine)
 
 	// 挂载鉴权路由
@@ -71,7 +72,7 @@ func BuildRouter(release bool, port int, host, cert, key string, engine *xorm.En
 	// 挂载公共路由
 	addPublicRoute(router.Object, ps)
 	// 挂载私有路由
-	addPrivateRoute(router.Object, ds)
+	addPrivateRoute(router.Object, ds, us)
 	// 兼容路由
 	router.Object.NoRoute(func(c *gin.Context) {
 		switch {
@@ -126,7 +127,7 @@ func addPublicRoute(router *gin.Engine, ps *P2PService) {
 }
 
 // 挂载私有路由
-func addPrivateRoute(router *gin.Engine, ds *DeviceService) {
+func addPrivateRoute(router *gin.Engine, ds *DeviceService, us *UserService) {
 	private := router.Group("").Use(AuthHandler())
 	{
 		// 注册设备
@@ -139,15 +140,18 @@ func addPrivateRoute(router *gin.Engine, ds *DeviceService) {
 		private.GET("/api/nas/:id", ds.GetInfo)
 		// 删除设备
 		private.POST("/api/nas/:id", ds.Del)
-
 		// 获取NAS在线状态
 		// private.GET("/api/nas", )
+
+		// 获取当前登录用户信息
+		private.GET("/api/user", us.GetLoginUser)
+
 	}
 }
 
 // 启动路由
 func (r Router) Run(engine *xorm.Engine) {
-	util.OutLogf("", "starting the router from port "+r.port)
+	util.OutLogf(MODEL_NAME, "starting from port "+r.port)
 	// 启动服务
 	go func() {
 		var err error
