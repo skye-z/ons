@@ -14,7 +14,7 @@ type Controller struct {
 
 func CreateController() *Controller {
 	control := &Controller{}
-	if util.GetBool("connect.auto") {
+	if util.GetBool("connect.auto") && util.GetString("connect.natId") != "" {
 		control.open()
 	}
 	return control

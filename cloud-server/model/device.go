@@ -79,6 +79,21 @@ func (model DeviceModel) GetDevice(id int64) (*Device, error) {
 	return device, nil
 }
 
+// 获取设备信息
+func (model DeviceModel) NATGetDevice(id string) (*Device, error) {
+	device := &Device{
+		NATId: id,
+	}
+	has, err := model.DB.Get(device)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, nil
+	}
+	return device, nil
+}
+
 // 获取设备列表
 func (model DeviceModel) GetDeviceList(uid int64, page, num int) ([]Device, error) {
 	var list []Device
