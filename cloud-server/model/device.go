@@ -82,11 +82,12 @@ func (model DeviceModel) GetDevice(id int64) (*Device, error) {
 // 获取设备列表
 func (model DeviceModel) GetDeviceList(uid int64, page, num int) ([]Device, error) {
 	var list []Device
-	var cache *xorm.Session
+	var err error
 	if uid != 1 {
-		cache = model.DB.Where("uid = ?", uid)
+		err = model.DB.Where("uid = ?", uid).Desc("id").Limit(num, (page-1)*num).Find(&list)
+	} else {
+		err = model.DB.Desc("id").Limit(num, (page-1)*num).Find(&list)
 	}
-	err := cache.Desc("id").Limit(num, (page-1)*num).Find(&list)
 	if err != nil {
 		return nil, err
 	}

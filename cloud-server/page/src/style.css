@@ -38,6 +38,10 @@ body {
   margin: 0 auto;
 }
 
+#app-main{
+  min-height: calc(100vh - 121px);
+}
+
 .app-content {
   min-height: calc(100vh - 121px);
   max-width: 890px;

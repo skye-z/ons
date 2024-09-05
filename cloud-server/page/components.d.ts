@@ -19,6 +19,7 @@ declare module 'vue' {
     NNotificationProvider: typeof import('naive-ui')['NNotificationProvider']
     NResult: typeof import('naive-ui')['NResult']
     NScrollbar: typeof import('naive-ui')['NScrollbar']
+    NSpin: typeof import('naive-ui')['NSpin']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }

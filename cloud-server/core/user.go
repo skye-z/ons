@@ -1,6 +1,8 @@
 package core
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/skye-z/cloud-server/model"
 	"github.com/skye-z/cloud-server/util"
@@ -21,7 +23,7 @@ func CreateUserService(engine *xorm.Engine) *UserService {
 }
 
 func (us UserService) GetLoginUser(ctx *gin.Context) {
-	uid := int64(ctx.GetInt("uid"))
+	uid, _ := strconv.ParseInt(ctx.GetString("uid"), 10, 64)
 	info, err := us.Data.GetUser(uid)
 	if err == nil {
 		util.ReturnData(ctx, true, info)

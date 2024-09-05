@@ -12,7 +12,9 @@
     <n-scrollbar style="height: 100vh">
       <div id="app-center">
         <head-bar />
-        <router-view />
+        <div id="app-main">
+          <router-view />
+        </div>
         <foot-bar />
       </div>
     </n-scrollbar>

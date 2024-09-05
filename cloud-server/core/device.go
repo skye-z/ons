@@ -1,6 +1,7 @@
 package core
 
 import (
+	"log"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -24,7 +25,7 @@ func CreateDeviceService(engine *xorm.Engine) *DeviceService {
 
 // 注册 NAS 设备
 func (ds DeviceService) Register(ctx *gin.Context) {
-	uid := int64(ctx.GetInt("uid"))
+	uid, _ := strconv.ParseInt(ctx.GetString("uid"), 10, 64)
 	name := ctx.PostForm("name")
 	if len(name) == 0 {
 		util.ReturnMessage(ctx, false, "设备名称不能为空")
@@ -62,7 +63,7 @@ func (ds DeviceService) ReName(ctx *gin.Context) {
 		return
 	}
 	info, err := ds.Data.GetDevice(id)
-	uid := int64(ctx.GetInt("uid"))
+	uid, _ := strconv.ParseInt(ctx.GetString("uid"), 10, 64)
 	if err != nil {
 		util.ReturnError(ctx, util.Errors.UnexpectedError)
 		return
@@ -84,10 +85,14 @@ func (ds DeviceService) ReName(ctx *gin.Context) {
 func (ds DeviceService) GetList(ctx *gin.Context) {
 	page := "1"
 	num := "5"
-	uid := int64(ctx.GetInt("uid"))
+	uid, _ := strconv.ParseInt(ctx.GetString("uid"), 10, 64)
 	if uid == 1 {
-		page = ctx.Query("page")
-		num = ctx.Query("number")
+		if ctx.Query("page") != "" {
+			page = ctx.Query("page")
+		}
+		if ctx.Query("number") != "" {
+			num = ctx.Query("number")
+		}
 	}
 	iPage, err1 := strconv.Atoi(page)
 	iNum, err2 := strconv.Atoi(num)
@@ -97,6 +102,7 @@ func (ds DeviceService) GetList(ctx *gin.Context) {
 	}
 	list, err := ds.Data.GetDeviceList(uid, iPage, iNum)
 	if err != nil {
+		log.Println(err)
 		util.ReturnError(ctx, util.Errors.UnexpectedError)
 	} else {
 		util.ReturnData(ctx, true, list)
@@ -107,7 +113,7 @@ func (ds DeviceService) GetList(ctx *gin.Context) {
 func (ds DeviceService) GetInfo(ctx *gin.Context) {
 	id, _ := strconv.ParseInt(ctx.Param("id"), 10, 64)
 	info, err := ds.Data.GetDevice(id)
-	uid := int64(ctx.GetInt("uid"))
+	uid, _ := strconv.ParseInt(ctx.GetString("uid"), 10, 64)
 	if err != nil {
 		util.ReturnError(ctx, util.Errors.UnexpectedError)
 	} else if uid != 1 && uid != info.UId {
@@ -121,7 +127,7 @@ func (ds DeviceService) GetInfo(ctx *gin.Context) {
 func (ds DeviceService) Del(ctx *gin.Context) {
 	id, _ := strconv.ParseInt(ctx.Param("id"), 10, 64)
 	info, err := ds.Data.GetDevice(id)
-	uid := int64(ctx.GetInt("uid"))
+	uid, _ := strconv.ParseInt(ctx.GetString("uid"), 10, 64)
 	if err != nil {
 		util.ReturnError(ctx, util.Errors.UnexpectedError)
 		return
