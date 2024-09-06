@@ -46,10 +46,10 @@ export default class NSPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 	// 初始化 PeerManager
-	private initializePeerManager() {
-		if (!this.peerManager && this.settings.signal) {
-			this.peerManager = new PeerManager(this.settings.signal, this.settings.devId);
-		}
+	initializePeerManager() {
+		if (this.peerManager) this.peerManager.close()
+		if (this.settings.server)
+			this.peerManager = new PeerManager(this.settings.server, this.settings.devId, this.settings.pwd);
 	}
 	// 执行手动同步
 	private syncFilesManually() {

@@ -3,7 +3,9 @@
         <div v-if="state == 0" class="loading">
             <n-spin />
         </div>
-        <template v-else-if="state == 1">
+        <n-result v-else-if="state == 1 && list.length == 0" class="tips" status="info" title="暂无设备"
+            description="请在 NAS 设备端点击’注册设备‘按钮" />
+        <template v-else-if="state == 1 && list.length > 0">
             <div class="card pa-10 flex align-center justify-between mb-10" v-for="item in list">
                 <div>
                     <div class="nas-name">{{ item.name }}</div>
@@ -71,7 +73,7 @@ export default {
             device.getList().then(res => {
                 this.state = res.state ? 1 : 2
                 if (res.state) {
-                    this.list = res.data
+                    this.list = res.data == null ? []:res.data
                     if (this.list.length > 0) this.checkState()
                 }
             }).catch(err => {

@@ -26,32 +26,13 @@ export class NSSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName('NAS 地址')
-			.setDesc('在互联网中访问可以访问你的 NAS 的地址')
-			.addText(text => text
-				.setPlaceholder('https://your-nas/sync')
-				.setValue(this.plugin.settings.nas)
-				.onChange(async (value) => {
-					this.plugin.settings.nas = value;
-					await this.plugin.saveSettings();
-				}));
-		new Setting(containerEl)
-			.setName('允许穿透')
-			.setDesc('如果无法从互联网访问你的 NAS, 必须开启穿透才有可能正常同步')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.nat)
-				.onChange(async (value) => {
-					this.plugin.settings.nat = value;
-					await this.plugin.saveSettings();
-				}));
-		new Setting(containerEl)
 			.setName('穿透服务器')
 			.setDesc('无法从互联网访问你的 NAS 时, 将由此服务器提供穿透服务')
 			.addText(text => text
-				.setPlaceholder('https://signal.betax.dev')
-				.setValue(this.plugin.settings.signal)
+				.setPlaceholder('ons.betax.dev')
+				.setValue(this.plugin.settings.server)
 				.onChange(async (value) => {
-					this.plugin.settings.signal = value;
+					this.plugin.settings.server = value;
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
@@ -73,6 +54,14 @@ export class NSSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.pwd = value;
 					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('连接测试')
+			.setDesc('配置完成后可使用此功能测试配置是否正确')
+			.addButton(text => text
+				.setButtonText("开始测试")
+				.onClick(async () => {
+					this.plugin.initializePeerManager();
 				}));
 	}
 }

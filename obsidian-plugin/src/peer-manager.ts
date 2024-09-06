@@ -1,9 +1,12 @@
+import { Notice } from 'obsidian';
+
 // 消息模型
 interface Message {
   event: string;
   data: any;
   to?: string;
   from?: string;
+  pass?: string;
 }
 
 export class PeerManager {
@@ -13,6 +16,8 @@ export class PeerManager {
   private nsaPath: string;
   // NAS编号
   private nabId: string;
+  // NAS连接密码
+  private pass: string;
   // 点对点连接
   private p2pCon: RTCPeerConnection;
   // 数据通道
@@ -20,9 +25,10 @@ export class PeerManager {
   // 添加一个候选队列
   private iceCandidateQueue: RTCIceCandidateInit[] = [];
   // 构造函数
-  constructor(url: string, nabId: string) {
-    this.nsaPath = url;
+  constructor(url: string, nabId: string, pass: string) {
+    this.nsaPath = 'ws://' + url + '/nat';
     this.nabId = nabId;
+    this.pass = pass;
     // 创建点对点连接
     this.p2pCon = new RTCPeerConnection({
       iceServers: [
@@ -52,6 +58,7 @@ export class PeerManager {
             to: this.nabId,
             from: 'NSC',
             data: event.candidate,
+            pass: this.pass
           };
           this.sendMessage(candidateMsg);
         } else {
@@ -74,6 +81,7 @@ export class PeerManager {
     this.p2pCon.ondatachannel = (event) => {
       const dataChannel = event.channel;
       dataChannel.onopen = () => {
+        new Notice("NAS 已连接");
         console.log('数据通道开启');
         this.syncFiles();
       };
@@ -102,6 +110,8 @@ export class PeerManager {
         this.setRemoteInfo(message.data);
       } else if (message.event === 'p2p-node') {
         this.setNodeInfo(message.data);
+      } else if (message.event === 'p2p-error' || message.event === 'error') {
+        this.outError(message.data);
       }
     };
     nsa.onerror = (error) => { console.error('与 NSA 连接出错:', error) };
@@ -117,7 +127,13 @@ export class PeerManager {
 
   // 第四步 发送本地连接信息
   public async sendLocalInfo() {
-    const msg: Message = { event: 'p2p-exchange', to: this.nabId, from: 'NSC', data: this.p2pCon.localDescription };
+    const msg: Message = {
+      event: 'p2p-exchange',
+      to: this.nabId,
+      from: 'NSC',
+      data: this.p2pCon.localDescription,
+      pass: this.pass
+    };
     this.sendMessage(msg);
   }
 
@@ -148,6 +164,44 @@ export class PeerManager {
     } catch (error) {
       console.error('添加 ICE 候选失败:', error);
     }
+  }
+
+  private async outError(data: any) {
+    console.log(data)
+    let msg = data
+    switch (data) {
+      case 'password error':
+        msg = '连接密码错误'
+        break
+      case 10001:
+        msg = '协议无法对齐'
+        break
+      case 10002:
+        msg = '不支持的接入类型'
+        break
+      case 10003:
+        msg = '不支持的消息类型'
+        break
+      case 10004:
+        msg = '设备不存在'
+        break
+      case 10005:
+        msg = '不支持的指令'
+        break
+      case 10006:
+        msg = '未能读取到消息内容'
+        break
+      case 10007:
+        msg = '不支持的消息格式'
+        break
+      case 10008:
+        msg = 'NAS 已离线'
+        break
+      default:
+        msg = '不支持的消息格式'
+        break
+    }
+    new Notice(msg);
   }
 
   // [工具] 发送信息给服务器A

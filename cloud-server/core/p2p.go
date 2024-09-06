@@ -46,6 +46,7 @@ type Message struct {
 	Data  json.RawMessage `json:"data"`
 	To    string          `json:"to,omitempty"`
 	From  string          `json:"from,omitempty"`
+	Pass  string          `json:"pass,omitempty"`
 }
 
 func (ps P2PService) Assess(ctx *gin.Context) {
@@ -188,7 +189,7 @@ func (ps P2PService) handleClientMessage(ws *websocket.Conn, clientID string, me
 			ps.Data.UpdateConnectTime(msg.To)
 			log.Printf("[P2P] NSC applies to connect #%s NSB", msg.To)
 		}
-	} else if msg.Event == "p2p-exchange" || msg.Event == "p2p-node" {
+	} else if msg.Event == "p2p-error" || msg.Event == "p2p-exchange" || msg.Event == "p2p-node" {
 		ps.relay(ws, msg)
 	}
 }

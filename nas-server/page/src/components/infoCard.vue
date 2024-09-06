@@ -56,7 +56,7 @@ export default {
             })
         },
         register(){
-            window.open('http://' + this.info.server + '/oauth2?uri=' + location.origin)
+            window.open('http://' + this.info.server + '/app/oauth2?uri=' + location.origin)
         },
         registerNext(){
             this.wait = true
@@ -65,6 +65,7 @@ export default {
                 if (res.state) {
                     this.info.natId = res.data
                     window.$message.success("设备注册成功");
+                    location.href = location.origin
                 } else window.$message.warning(res.message ? res.message : "注册失败");
             }).catch(() => {
                 this.wait = false

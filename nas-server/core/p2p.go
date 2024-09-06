@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v3"
+	"github.com/skye-z/nas-server/util"
 )
 
 // 消息模型
@@ -18,6 +19,7 @@ type Message struct {
 	Data  json.RawMessage `json:"data"`
 	To    string          `json:"to,omitempty"`
 	From  string          `json:"from,omitempty"`
+	Pass  string          `json:"pass"`
 }
 
 type P2PServer struct {
@@ -67,6 +69,16 @@ func (s *P2PServer) handleMessages() {
 
 		switch msg.Event {
 		case "p2p-exchange":
+			if msg.Pass != util.GetString("connect.password") {
+				log.Println("[P2P] NSC connection password error")
+				s.sendMessage(Message{
+					Event: "p2p-error",
+					Data:  json.RawMessage(`"password error"`),
+					To:    s.natId,
+					From:  "NSB",
+				})
+				continue
+			}
 			signalData := webrtc.SessionDescription{}
 			if err := json.Unmarshal(msg.Data, &signalData); err != nil {
 				log.Printf("[P2P] unable to parse connection information: %v", err)
@@ -76,6 +88,16 @@ func (s *P2PServer) handleMessages() {
 				s.setP2PInfo(signalData)
 			}
 		case "p2p-node":
+			if msg.Pass != util.GetString("connect.password") {
+				log.Println("[P2P] NSC connection password error")
+				s.sendMessage(Message{
+					Event: "p2p-error",
+					Data:  json.RawMessage(`"password error"`),
+					To:    s.natId,
+					From:  "NSB",
+				})
+				continue
+			}
 			nodeData := webrtc.ICECandidateInit{}
 			if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
 				log.Printf("[P2P] unable to parse node information: %v", err)
