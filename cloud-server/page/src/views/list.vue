@@ -11,12 +11,15 @@
                 </div>
                 <div>
                     <div class="nas-time text-small text-right">
-                        <n-time :time="item.lastOnline" :type="now - item.lastOnline > offset ? 'relative' : 'date'" />
+                        <n-time v-if="item.lastOnline > 0" :time="item.lastOnline"
+                            :type="now - item.lastOnline > offset ? 'relative' : 'date'" />
+                        <span v-else>从未</span>
                         <span class="ml-5">上线</span>
                     </div>
                     <div class="nas-time text-small text-right">
-                        <n-time :time="item.lastConnect"
+                        <n-time v-if="item.lastConnect > 0" :time="item.lastConnect"
                             :type="now - item.lastConnect > offset ? 'relative' : 'date'" />
+                        <span v-else>从未</span>
                         <span class="ml-5">连接</span>
                     </div>
                     <div class="nas-time mt-5 flex align-center text-small justify-end">
@@ -102,22 +105,22 @@ export default {
     font-weight: bold;
 }
 
-.nas-time{
+.nas-time {
     line-height: 14px;
 }
 
-.dot{
+.dot {
     border-radius: 8px;
     margin-right: 3px;
     height: 10px;
     width: 10px;
 }
 
-.dot.dot-red{
+.dot.dot-red {
     background-color: #ff0000;
 }
 
-.dot.dot-green{
+.dot.dot-green {
     background-color: #008000;
 }
 </style>

@@ -67,7 +67,7 @@ func createDefault() {
 	viper.SetDefault("basic.sslKey", "")
 	// 是否开放注册
 	viper.SetDefault("connect.auto", "false")
-	viper.SetDefault("connect.server", "wss://192.168.1.160:8080/nat")
+	viper.SetDefault("connect.server", "192.168.1.160:9891")
 	viper.SetDefault("connect.natId", "")
 	viper.SetDefault("connect.password", "")
 	// 令牌密钥

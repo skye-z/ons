@@ -81,6 +81,10 @@ func (c *Controller) GetStatus(ctx *gin.Context) {
 }
 
 func (c *Controller) Connect(ctx *gin.Context) {
+	if util.GetString("connect.natId") == "" {
+		util.ReturnMessage(ctx, false, "请先完成设备注册")
+		return
+	}
 	go c.open()
 	util.ReturnMessage(ctx, true, "开始连接")
 }
@@ -94,6 +98,10 @@ func (c *Controller) open() {
 }
 
 func (c *Controller) Disconnect(ctx *gin.Context) {
+	if util.GetString("connect.natId") == "" {
+		util.ReturnMessage(ctx, false, "请先完成设备注册")
+		return
+	}
 	if c.Server != nil && c.Server.connect != nil {
 		c.Server.connect.Close()
 		c.Server.connect = nil

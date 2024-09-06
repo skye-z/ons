@@ -104,13 +104,12 @@ func addPublicRoute(router *gin.Engine) {
 		ctx.Request.URL.Path = "/app"
 		router.HandleContext(ctx)
 	})
-	// 重命名设备
-	// router.POST("/api/rename", )
-	// 修改密码
-	// router.POST("/api/repass", )
 	control := CreateController()
+	setting := CreateSettingServer()
 	api := router.Group("/api")
 	{
+		api.GET("/setting", setting.Get)
+		api.POST("/setting/pwd", setting.SetPassword)
 		api.GET("/register", control.Register)
 		api.GET("/conn/state", control.GetStatus)
 		api.GET("/conn/open", control.Connect)
