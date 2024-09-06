@@ -4,7 +4,7 @@
             <n-spin />
         </div>
         <template v-else-if="state == 1">
-            <div class="card pa-10 flex align-center justify-between" v-for="item in list">
+            <div class="card pa-10 flex align-center justify-between mb-10" v-for="item in list">
                 <div>
                     <div class="nas-name">{{ item.name }}</div>
                     <div class="nas-id">NAT.ID {{ item.natId }}</div>

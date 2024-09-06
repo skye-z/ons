@@ -111,9 +111,10 @@ func addPublicRoute(router *gin.Engine) {
 	control := CreateController()
 	api := router.Group("/api")
 	{
+		api.GET("/register", control.Register)
 		api.GET("/conn/state", control.GetStatus)
-		api.POST("/conn/open", control.Connect)
-		api.POST("/conn/close", control.Disconnect)
+		api.GET("/conn/open", control.Connect)
+		api.GET("/conn/close", control.Disconnect)
 	}
 }
 
