@@ -3,7 +3,7 @@
 	"name": "NAS Sync",
 	"version": "1.0.0",
 	"minAppVersion": "1.6.7",
-	"description": "与你家中内网的 NAS 时刻保持同步(需搭配 BetaX Obsidian NAS Sync Server)",
+	"description": "与你家中内网的 NAS 时刻保持同步(需搭配BetaX Sync Server)",
 	"author": "Skye",
 	"authorUrl": "https://github.com/skye-z",
 	"fundingUrl": "https://github.com/skye-z/nas-sync",

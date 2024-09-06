@@ -1,4 +1,4 @@
-import { Notice, Plugin } from 'obsidian';
+import { Notice, Plugin, TFile, TFolder } from 'obsidian';
 import { NSPluginSettings, NSDefaultSettings } from './src/model';
 import { PeerManager } from './src/peer-manager';
 import { NSSettingTab } from './src/setting';
@@ -6,6 +6,7 @@ import { NSSettingTab } from './src/setting';
 // 插件主体
 export default class NSPlugin extends Plugin {
 	settings: NSPluginSettings;
+	status: HTMLElement;
 	private peerManager: PeerManager | null = null;
 	private isSyncing: boolean = false;
 	// 插件加载
@@ -13,8 +14,8 @@ export default class NSPlugin extends Plugin {
 		// 加载设置
 		await this.loadSettings();
 		// 创建状态栏显示区
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('自动模式(3分钟前)');
+		this.status = this.addStatusBarItem();
+		this.status.setText(this.settings.model === 'auto' ? '自动模式' : '手动模式');
 		// 添加更新命令
 		this.addCommand({
 			id: 'nas-sync',
@@ -24,7 +25,9 @@ export default class NSPlugin extends Plugin {
 		// 创建设置选项卡
 		this.addSettingTab(new NSSettingTab(this.app, this));
 		// 初始化 PeerManager
-		this.initializePeerManager();
+		this.initPeerManager();
+		// 初始化监听器
+		this.initListener();
 		// 注册自动同步计时器
 		this.registerInterval(window.setInterval(
 			() => this.syncFilesAutomatically(), 5 * 60 * 1000
@@ -46,10 +49,36 @@ export default class NSPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 	// 初始化 PeerManager
-	initializePeerManager() {
+	initPeerManager() {
 		if (this.peerManager) this.peerManager.close()
 		if (this.settings.server)
 			this.peerManager = new PeerManager(this.settings.server, this.settings.devId, this.settings.pwd);
+	}
+	// 初始化监听器
+	initListener() {
+		const { vault } = this.app;
+		vault.on('create', (file) => {
+			this.syncWork('create', file.name, file.path)
+		})
+		vault.on('delete', (file) => {
+			this.syncWork('delete', file.name, file.path)
+		})
+		vault.on('rename', (file) => {
+			this.syncWork('rename', file.name, file.path)
+		})
+		vault.on('modify', (file) => {
+			this.syncWork('modify', file.name, file.path)
+		})
+	}
+	syncWork(type: string, name: string, path: string) {
+		var stat = this.app.vault.getAbstractFileByPath(path)
+		if (stat instanceof TFile) {
+			stat.vault.cachedRead(stat).then(res => {
+				console.log('file', type, name, path, stat, res)
+			})
+		} else if (stat instanceof TFolder) {
+			console.log('folder', type, name, path, stat)
+		}
 	}
 	// 执行手动同步
 	private syncFilesManually() {

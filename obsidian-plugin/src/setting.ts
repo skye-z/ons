@@ -23,6 +23,7 @@ export class NSSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.model)
 				.onChange(async (value) => {
 					this.plugin.settings.model = value;
+					this.plugin.status.setText(value === 'auto' ? '自动模式':'手动模式');
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
