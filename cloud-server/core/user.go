@@ -4,8 +4,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/skye-z/cloud-server/model"
-	"github.com/skye-z/cloud-server/util"
+	"github.com/skye-z/nas-sync/cloud-server/model"
+	"github.com/skye-z/nas-sync/cloud-server/util"
 	"xorm.io/xorm"
 )
 

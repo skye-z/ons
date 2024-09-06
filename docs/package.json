@@ -1,0 +1,17 @@
+{
+  "name": "nas-sync",
+  "version": "1.0.0",
+  "description": "Obsidian NAS Sync Server",
+  "main": "index.js",
+  "repository": "https://github.com/skye-z/nas-sync",
+  "author": "skye-z",
+  "license": "MIT",
+  "devDependencies": {
+    "vitepress": "^1.0.0-rc.39"
+  },
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  }
+}

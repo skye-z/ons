@@ -24,4 +24,6 @@ data.json
 *.exe~
 *.dll
 *.so
-dist
+cache/
+dist/
+out/

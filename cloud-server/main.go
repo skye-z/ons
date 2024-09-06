@@ -4,8 +4,8 @@ import (
 	"embed"
 	"flag"
 
-	"github.com/skye-z/cloud-server/core"
-	"github.com/skye-z/cloud-server/util"
+	"github.com/skye-z/nas-sync/cloud-server/core"
+	"github.com/skye-z/nas-sync/cloud-server/util"
 )
 
 //go:embed page/dist/*

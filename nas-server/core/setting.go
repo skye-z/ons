@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/skye-z/nas-server/util"
+	"github.com/skye-z/nas-sync/nas-server/util"
 )
 
 type Setting struct {
