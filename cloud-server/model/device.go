@@ -1,14 +1,18 @@
 package model
 
 import (
+	"time"
+
 	"xorm.io/xorm"
 )
 
 type Device struct {
-	Id    int64  `json:"id"`    // 设备编号
-	UId   int64  `json:"uid"`   // 关联用户
-	NATId string `json:"natId"` // NAT编号
-	Name  string `json:"name"`  // 设备名称
+	Id          int64  `json:"id"`          // 设备编号
+	UId         int64  `json:"uid"`         // 关联用户
+	NatId       string `json:"natId"`       // NAT编号
+	Name        string `json:"name"`        // 设备名称
+	LastOnline  int64  `json:"lastOnline"`  // 上次上线时间
+	LastConnect int64  `json:"lastConnect"` // 上次连接时间
 }
 
 type DeviceModel struct {
@@ -19,7 +23,7 @@ type DeviceModel struct {
 func (model DeviceModel) AddDevice(uid int64, name, nat string) bool {
 	device := &Device{
 		UId:   uid,
-		NATId: nat,
+		NatId: nat,
 		Name:  name,
 	}
 	_, err := model.DB.Insert(device)
@@ -39,6 +43,35 @@ func (model DeviceModel) UpdateName(id int64, name string) bool {
 	if err != nil || !has {
 		return false
 	}
+	device.Name = name
+	_, err = model.DB.ID(device.Id).Update(device)
+	return err == nil
+}
+
+// 更新上线时间
+func (model DeviceModel) UpdateOnlineTime(id int64) bool {
+	device := &Device{
+		Id: id,
+	}
+	has, err := model.DB.Get(device)
+	if err != nil || !has {
+		return false
+	}
+	device.LastOnline = time.Now().Unix() * 1000
+	_, err = model.DB.ID(device.Id).Update(device)
+	return err == nil
+}
+
+// 更新上线时间
+func (model DeviceModel) UpdateConnectTime(natId string) bool {
+	device := &Device{
+		NatId: natId,
+	}
+	has, err := model.DB.Get(device)
+	if err != nil || !has {
+		return false
+	}
+	device.LastConnect = time.Now().Unix() * 1000
 	_, err = model.DB.ID(device.Id).Update(device)
 	return err == nil
 }
@@ -55,7 +88,7 @@ func (model DeviceModel) DelDevice(id int64) bool {
 // 检查NAT编号
 func (model DeviceModel) CheckNATId(nat string) bool {
 	device := &Device{
-		NATId: nat,
+		NatId: nat,
 	}
 	has, err := model.DB.Get(device)
 	if err != nil {
@@ -82,7 +115,7 @@ func (model DeviceModel) GetDevice(id int64) (*Device, error) {
 // 获取设备信息
 func (model DeviceModel) NATGetDevice(id string) (*Device, error) {
 	device := &Device{
-		NATId: id,
+		NatId: id,
 	}
 	has, err := model.DB.Get(device)
 	if err != nil {

@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/skye-z/cloud-server/model"
+	"github.com/skye-z/cloud-server/util"
 	"xorm.io/xorm"
 )
 
@@ -19,10 +21,11 @@ var (
 		WriteBufferSize: 1024,
 		CheckOrigin:     func(r *http.Request) bool { return true },
 	}
-	peers       = make(map[string]*websocket.Conn)
-	clients     = make(map[*websocket.Conn]string)
-	clientPeers = make(map[string]*websocket.Conn)
-	mu          sync.Mutex
+	peers         = make(map[string]*websocket.Conn)
+	clients       = make(map[*websocket.Conn]string)
+	clientPeers   = make(map[string]*websocket.Conn)
+	clientMapping = make(map[string]string)
+	mu            sync.Mutex
 )
 
 type P2PService struct {
@@ -53,7 +56,7 @@ func (ps P2PService) Assess(ctx *gin.Context) {
 	}
 	defer func() {
 		if err := ws.Close(); err != nil {
-			log.Printf("连接关闭失败: %v", err)
+			log.Printf("[P2P] connection closure failed: %v", err)
 		}
 	}()
 	_, message, err := ws.ReadMessage()
@@ -74,7 +77,10 @@ func (ps P2PService) Assess(ctx *gin.Context) {
 		} else if info == nil {
 			ps.sendError(ws, "10004")
 		} else {
-			ps.register(ws, info.NATId)
+			// 更新在线时间
+			ps.Data.UpdateOnlineTime(info.Id)
+			// 注册设备
+			ps.register(ws, info.NatId)
 		}
 	} else if msg.Event == "connect" {
 		// NSC接入
@@ -86,15 +92,15 @@ func (ps P2PService) Assess(ctx *gin.Context) {
 }
 
 // 注册设备
-func (ps P2PService) register(ws *websocket.Conn, peerID string) {
-	log.Printf("注册 NSB: %s", peerID)
+func (ps P2PService) register(ws *websocket.Conn, natId string) {
+	log.Printf("[P2P] register NSB: %s", natId)
 	mu.Lock()
-	peers[peerID] = ws
+	peers[natId] = ws
 	mu.Unlock()
 
 	defer func() {
 		mu.Lock()
-		delete(peers, peerID)
+		delete(peers, natId)
 		mu.Unlock()
 	}()
 
@@ -124,20 +130,22 @@ func (ps P2PService) register(ws *websocket.Conn, peerID string) {
 
 // 连接设备
 func (ps P2PService) connet(ws *websocket.Conn, firstMessage []byte) {
-	log.Println("注册 NSC")
-	clientID := "" // 在此获取或生成一个客户端ID
+	clientID := util.GenerateRandomNumber(6)
+	log.Printf("[P2P] NSC #%s is connected", clientID)
 
 	defer func() {
 		mu.Lock()
 		if clientID != "" {
 			delete(clients, ws)
+			delete(clientPeers, clientMapping[clientID])
+			delete(clientMapping, clientID)
 		}
 		mu.Unlock()
-		log.Printf("Client %s disconnected", clientID)
+		log.Printf("[P2P] NSC #%s disconnected", clientID)
 	}()
 
 	// 处理客户端的初始连接消息
-	ps.handleClientMessage(ws, firstMessage)
+	ps.handleClientMessage(ws, clientID, firstMessage)
 
 	for {
 		_, message, err := ws.ReadMessage()
@@ -146,12 +154,12 @@ func (ps P2PService) connet(ws *websocket.Conn, firstMessage []byte) {
 			break
 		}
 
-		ps.handleClientMessage(ws, message)
+		ps.handleClientMessage(ws, clientID, message)
 	}
 }
 
 // 处理客户端消息
-func (ps P2PService) handleClientMessage(ws *websocket.Conn, message []byte) {
+func (ps P2PService) handleClientMessage(ws *websocket.Conn, clientID string, message []byte) {
 	var msg Message
 	if err := json.Unmarshal(message, &msg); err != nil {
 		ps.sendError(ws, "10007")
@@ -163,18 +171,22 @@ func (ps P2PService) handleClientMessage(ws *websocket.Conn, message []byte) {
 		mu.Lock()
 		clients[ws] = msg.To
 		clientPeers[msg.To] = ws
+		clientMapping[clientID] = msg.To
 		mu.Unlock()
 
 		// 发送确认消息给客户端
 		msg := Message{
 			Event: "connect",
 			Data:  json.RawMessage(`"准许连接 #` + msg.To + ` NSB"`),
+			To:    msg.To,
 			From:  "NSA",
 		}
 		if err := ps.sendMessage(ws, msg); err != nil {
-			log.Printf("消息发送失败 %s: %v", msg.To, err)
+			log.Printf("[P2P] mssage sending failed %s: %v", msg.To, err)
 		} else {
-			log.Printf("NSC 申请连接 #%s NSB", msg.To)
+			// 更新连接时间
+			ps.Data.UpdateConnectTime(msg.To)
+			log.Printf("[P2P] NSC applies to connect #%s NSB", msg.To)
 		}
 	} else if msg.Event == "p2p-exchange" || msg.Event == "p2p-node" {
 		ps.relay(ws, msg)
@@ -197,9 +209,7 @@ func (ps P2PService) relay(now *websocket.Conn, msg Message) {
 
 	if peerExists {
 		if err := ps.sendMessage(ws, msg); err != nil {
-			log.Printf("消息发送失败 %s: %v", msg.To, err)
-		} else {
-			log.Printf("已将 %s 连接信息发送至 %s", msg.From, msg.To)
+			log.Printf("[P2P] mssage sending failed %s: %v", msg.To, err)
 		}
 	} else {
 		ps.sendError(now, "10008")
@@ -224,4 +234,28 @@ func (ps P2PService) sendError(ws *websocket.Conn, msg string) error {
 func (ps P2PService) sendMessage(ws *websocket.Conn, msg Message) error {
 	msgBytes, _ := json.Marshal(msg)
 	return ws.WriteMessage(websocket.TextMessage, msgBytes)
+}
+
+// 检查连接状态
+func (ps P2PService) CheckOnline(ctx *gin.Context) {
+	uid, _ := strconv.ParseInt(ctx.GetString("uid"), 10, 64)
+	list, err := ps.Data.GetDeviceList(uid, 1, 100)
+	if err != nil {
+		util.ReturnMessage(ctx, false, "获取状态失败")
+		return
+	}
+
+	date := make(map[string]map[string]bool)
+	online := make(map[string]bool)
+	connect := make(map[string]bool)
+	for _, device := range list {
+		id := device.NatId
+		_, oe := peers[id]
+		online[id] = oe
+		_, ce := clientPeers[id]
+		connect[id] = ce
+	}
+	date["online"] = online
+	date["connect"] = connect
+	util.ReturnData(ctx, true, date)
 }

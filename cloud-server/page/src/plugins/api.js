@@ -43,5 +43,6 @@ export const device = {
     rename: name => post('/nas/rename', { name }),
     remove: () => post('/nas/' + id, {}),
     getList: () => get('/nas/list'),
+    getState: () => get('/nas/state'),
     getInfo: id => get('/nas/' + id)
 }

@@ -72,7 +72,7 @@ func BuildRouter(release bool, port int, host, cert, key string, engine *xorm.En
 	// 挂载公共路由
 	addPublicRoute(router.Object, ps)
 	// 挂载私有路由
-	addPrivateRoute(router.Object, ds, us)
+	addPrivateRoute(router.Object, ds, ps, us)
 	// 兼容路由
 	router.Object.NoRoute(func(c *gin.Context) {
 		switch {
@@ -127,7 +127,7 @@ func addPublicRoute(router *gin.Engine, ps *P2PService) {
 }
 
 // 挂载私有路由
-func addPrivateRoute(router *gin.Engine, ds *DeviceService, us *UserService) {
+func addPrivateRoute(router *gin.Engine, ds *DeviceService, ps *P2PService, us *UserService) {
 	private := router.Group("").Use(AuthHandler())
 	{
 		// 注册设备
@@ -141,7 +141,7 @@ func addPrivateRoute(router *gin.Engine, ds *DeviceService, us *UserService) {
 		// 删除设备
 		private.POST("/api/nas/:id", ds.Del)
 		// 获取NAS在线状态
-		// private.GET("/api/nas", )
+		private.GET("/api/nas/state", ps.CheckOnline)
 
 		// 获取当前登录用户信息
 		private.GET("/api/user", us.GetLoginUser)
