@@ -2,16 +2,17 @@
 
 echo "Start build nas sync project..."
 
+rm -rf ./out
+mkdir ./out
+
 init(){
     go mod download
     go mod tidy
-    rm -rf ./out
-    mkdir ./out
 }
 
 generate(){
     CGO_ENABLED=0 GOOS=$1 GOARCH=$2 go build -o $3_$1_$2 -ldflags '-s -w'
-    mv $3_$1_$2 ./out/
+    mv $3_$1_$2 ../out/
 }
 
 cd cloud-server

@@ -36,8 +36,11 @@ type Router struct {
 func BuildRouter(release bool, port int, host, cert, key string, engine *xorm.Engine, page embed.FS) *Router {
 	if release {
 		gin.SetMode(gin.ReleaseMode)
+		gin.DefaultWriter = io.Discard
+		util.OutLogf(MODEL_NAME, "release mode")
+	} else {
+		util.OutLogf(MODEL_NAME, "debug mode")
 	}
-	gin.DefaultWriter = io.Discard
 	router := &Router{
 		Object: gin.Default(),
 		cert:   cert,

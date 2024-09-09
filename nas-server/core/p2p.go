@@ -32,7 +32,7 @@ type P2PServer struct {
 
 // 第一步 创建 P2P 服务
 func NewP2PServer(natId string, host string) *P2PServer {
-	path := url.URL{Scheme: "ws", Host: host, Path: "/nat"}
+	path := url.URL{Scheme: "wss", Host: host, Path: "/nat"}
 	log.Printf("[P2P] connect %s", path.String())
 	connect, _, err := websocket.DefaultDialer.Dial(path.String(), nil)
 	if err != nil {

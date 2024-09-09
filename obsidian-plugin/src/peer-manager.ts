@@ -12,7 +12,7 @@ interface Message {
 export class PeerManager {
   // 服务器A, 作为信令和中转服务器
   private nsa: WebSocket;
-  // NSA 地址(ws://....)
+  // NSA 地址(wss://....)
   private nsaPath: string;
   // NAS编号
   private nabId: string;
@@ -26,7 +26,7 @@ export class PeerManager {
   private iceCandidateQueue: RTCIceCandidateInit[] = [];
   // 构造函数
   constructor(url: string, nabId: string, pass: string) {
-    this.nsaPath = 'ws://' + url + '/nat';
+    this.nsaPath = 'wss://' + url + '/nat';
     this.nabId = nabId;
     this.pass = pass;
     // 创建点对点连接

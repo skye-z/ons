@@ -35,7 +35,7 @@ func (c *Controller) Register(ctx *gin.Context) {
 	if err != nil {
 		hostname = "匿名主机"
 	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s/api/nas/register", util.GetString("connect.server")), strings.NewReader(fmt.Sprintf("name=%s", hostname)))
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/api/nas/register", util.GetString("connect.server")), strings.NewReader(fmt.Sprintf("name=%s", hostname)))
 	if err != nil {
 		util.ReturnMessage(ctx, false, "中控服务器地址不可用")
 		return

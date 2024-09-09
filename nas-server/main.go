@@ -21,9 +21,6 @@ func main() {
 	// 解析命令行参数
 	flag.Parse()
 	// 初始化路由器
-	router := core.BuildRouter(!*debug, *port, "0.0.0.0", "", "", page)
+	router := core.BuildRouter(!*debug, *port, "0.0.0.0", util.GetString("basic.sslCert"), util.GetString("basic.sslKey"), page)
 	router.Run()
-
-	// server := core.NewP2PServer("749601", "192.168.1.160:8080")
-	// server.Run()
 }
