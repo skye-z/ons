@@ -62,7 +62,7 @@ export class NSSettingTab extends PluginSettingTab {
 			.addButton(text => text
 				.setButtonText("开始测试")
 				.onClick(async () => {
-					this.plugin.initializePeerManager();
+					this.plugin.initPeerManager();
 				}));
 	}
 }
