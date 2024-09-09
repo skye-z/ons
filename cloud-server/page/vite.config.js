@@ -38,8 +38,7 @@ export default defineConfig({
       injectRegister: 'auto',
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,jpg,ico,json}']
-      },
-      manifest: false
+      }
     })
   ],
   server: {

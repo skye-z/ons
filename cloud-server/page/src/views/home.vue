@@ -7,7 +7,9 @@
             <div class="name">NAS Sync Server</div>
             <div class="slogan">让 Obsidian 与你家中内网的 NAS 时刻保持同步</div>
             <div class="mt-10 flex align-center">
-                <n-button round type="primary" class="mr-10">使用帮助</n-button>
+                <a class="flex" href="https://skye-z.github.io/ons/" target="_blank" style="text-decoration: none;">
+                    <n-button round type="primary" class="mr-10">使用帮助</n-button>
+                </a>
                 <a class="flex" href="https://github.com/skye-z/ons/stargazers" target="_blank">
                     <img class="stars" :src="start" />
                 </a>
