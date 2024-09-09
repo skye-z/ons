@@ -13,7 +13,7 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
-	"github.com/skye-z/nas-sync/nas-server/util"
+	"github.com/skye-z/ons/nas-server/util"
 )
 
 const MODEL_NAME = "Core"

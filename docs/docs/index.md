@@ -14,7 +14,7 @@ hero:
       link: /guide/start
     - theme: alt
       text: Github
-      link: https://github.com/skye-z/nas-sync
+      link: https://github.com/skye-z/ons
 
 features:
   - icon: 💰

@@ -10,8 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/skye-z/nas-sync/cloud-server/model"
-	"github.com/skye-z/nas-sync/cloud-server/util"
+	"github.com/skye-z/ons/cloud-server/model"
+	"github.com/skye-z/ons/cloud-server/util"
 	"xorm.io/xorm"
 )
 

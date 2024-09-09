@@ -12,14 +12,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/skye-z/nas-sync/cloud-server/model"
-	"github.com/skye-z/nas-sync/cloud-server/util"
+	"github.com/skye-z/ons/cloud-server/model"
+	"github.com/skye-z/ons/cloud-server/util"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 	"xorm.io/xorm"
 )
 
-const IssuerName = "BetaX NAS Sync"
+const IssuerName = "BetaX ONS"
 const tokenKey = "token.secret"
 
 type AuthService struct {

@@ -5,7 +5,7 @@
             <n-button text class="text-gray">Skye Zhang</n-button>
         </a>
         <div class="ml-10">&hearts;</div>
-        <div class="ml-10 mr-5">Built on <a href="https://github.com/skye-z/nas-sync" rel="noopener"
+        <div class="ml-10 mr-5">Built on <a href="https://github.com/skye-z/ons" rel="noopener"
                 target="_blank"><n-button text class="text-gray">BetaX NAS Sync</n-button></a></div>
     </div>
 </template>

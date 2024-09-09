@@ -8,7 +8,7 @@ Copyright © 2024 SkyeZhang <skai-zhang@hotmail.com>
 package util
 
 import (
-	"github.com/skye-z/nas-sync/cloud-server/model"
+	"github.com/skye-z/ons/cloud-server/model"
 	_ "modernc.org/sqlite"
 	"xorm.io/xorm"
 )

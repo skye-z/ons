@@ -1,9 +1,9 @@
 {
-  "name": "nas-sync",
+  "name": "ons",
   "version": "1.0.0",
   "description": "Obsidian NAS Sync Server",
   "main": "index.js",
-  "repository": "https://github.com/skye-z/nas-sync",
+  "repository": "https://github.com/skye-z/ons",
   "author": "skye-z",
   "license": "MIT",
   "devDependencies": {

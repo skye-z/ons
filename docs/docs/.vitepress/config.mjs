@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  base: "/nas-sync/",
+  base: "/ons/",
   title: "BetaX ONS",
   description: "BetaX Obsidian NAS Sync Server",
   head: [['link', { rel: 'icon', href: '/icon/icon-light@1x.png' }]],
@@ -56,7 +56,7 @@ export default defineConfig({
       level: [2, 6]
     },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/skye-z/nas-sync' }
+      { icon: 'github', link: 'https://github.com/skye-z/ons' }
     ],
     footer: {
       message: 'Released under the MIT License.',

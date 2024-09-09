@@ -1,4 +1,4 @@
-module github.com/skye-z/nas-sync/cloud-server
+module github.com/skye-z/ons/cloud-server
 
 go 1.22.2
 

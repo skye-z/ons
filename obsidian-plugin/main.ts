@@ -18,7 +18,7 @@ export default class NSPlugin extends Plugin {
 		this.status.setText(this.settings.model === 'auto' ? '自动模式' : '手动模式');
 		// 添加更新命令
 		this.addCommand({
-			id: 'nas-sync',
+			id: 'ons',
 			name: '手动更新',
 			callback: () => this.syncFilesManually()
 		});

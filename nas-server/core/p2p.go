@@ -10,7 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v3"
-	"github.com/skye-z/nas-sync/nas-server/util"
+	"github.com/skye-z/ons/nas-server/util"
 )
 
 // 消息模型
