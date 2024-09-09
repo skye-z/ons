@@ -9,3 +9,17 @@
 ## 网络拓扑
 
 ![](docs/image/network.png)
+
+## 安装中控
+
+```shell
+bash -c "$(curl -fsSL https://betax.dev/sc/ons.sh)"
+```
+
+## 控制
+
+```shell
+systemctl status ons-server
+systemctl start ons-server
+systemctl stop ons-server
+```

@@ -58,16 +58,20 @@ export default class NSPlugin extends Plugin {
 	initListener() {
 		const { vault } = this.app;
 		vault.on('create', (file) => {
-			this.syncWork('create', file.name, file.path)
+			if (this.peerManager != null)
+				this.peerManager.sendOperate('create', file)
 		})
 		vault.on('delete', (file) => {
-			this.syncWork('delete', file.name, file.path)
-		})
-		vault.on('rename', (file) => {
-			this.syncWork('rename', file.name, file.path)
+			if (this.peerManager != null)
+				this.peerManager.sendOperate('delete', file)
 		})
 		vault.on('modify', (file) => {
-			this.syncWork('modify', file.name, file.path)
+			if (this.peerManager != null)
+				this.peerManager.sendOperate('update', file)
+		})
+		vault.on('rename', (file,old) => {
+			if (this.peerManager != null)
+				this.peerManager.sendOperate('rename', file,old)
 		})
 	}
 	syncWork(type: string, name: string, path: string) {

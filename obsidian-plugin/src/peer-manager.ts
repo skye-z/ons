@@ -1,4 +1,4 @@
-import { Notice } from 'obsidian';
+import { arrayBufferToBase64, Notice, TFile, TFolder } from 'obsidian';
 
 // 消息模型
 interface Message {
@@ -7,6 +7,14 @@ interface Message {
   to?: string;
   from?: string;
   pass?: string;
+}
+
+interface SyncMessage {
+  type: 'text' | 'binary' | 'directory' | undefined; // 消息类型
+  operate: 'create' | 'delete' | 'update' | 'rename' | undefined; // 操作类型
+  path: string | undefined; // 所在路径
+  name: string | undefined; // 对象名称
+  data: string | undefined; // 实际数据
 }
 
 export class PeerManager {
@@ -34,7 +42,7 @@ export class PeerManager {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun.nextcloud.com:443' }
-      ]
+      ],
     });
     // 第一步 生成本地描述信息
     this.settingLocalInfo()
@@ -47,7 +55,9 @@ export class PeerManager {
     // 创建数据通道(必须在最前面)
     this.channel = this.p2pCon.createDataChannel('NSChanel')
     this.channel.onclose = () => console.log('数据通道已关闭');
-    this.channel.onerror = (error) => console.error('数据通道错误:', error);
+    this.channel.onerror = (error) => {
+      console.error('数据通道错误:', error)
+    };
     // 监听网络节点变动
     this.p2pCon.onicecandidate = (event) => {
       if (event.candidate) {
@@ -215,7 +225,80 @@ export class PeerManager {
 
   syncFiles() {
     console.log('文件同步正在进行...');
+    // 1. 检查是否需要更新
+    // 2. nas新则拉取
+    // 3. 本地新则推送
     this.channel.send('Hello from JavaScript!')
+  }
+
+  sendOperate(operate: 'create' | 'delete' | 'update' | 'rename', file: TFile | TFolder, old: string | undefined) {
+    const blockSize = 40 * 1024;
+    // 发送文本消息
+    let msg: SyncMessage = {
+      path: file.parent?.path,
+      name: file.name,
+      type: undefined,
+      data: undefined,
+      operate
+    };
+    // 删除操作, 直接发送
+    if (operate === 'delete') {
+      this.channel.send(JSON.stringify(msg));
+      return
+    }
+    // 重命名操作, 直接发送
+    if (operate === 'rename') {
+      msg.data = old;
+      this.channel.send(JSON.stringify(msg));
+      return
+    }
+    // 目标为文件夹, 直接发送
+    if (file instanceof TFolder) {
+      msg.type = 'directory'
+      this.channel.send(JSON.stringify(msg));
+      return
+    }
+    // 判断文件类型
+    if (file.extension === 'md') {
+      msg.type = 'text'
+      file.vault.cachedRead(file).then(data => {
+        const encoder = new TextEncoder();
+        const encodedText = encoder.encode(data);
+        msg.data = btoa(String.fromCharCode(...new Uint8Array(encodedText)))
+        this.channel.send(JSON.stringify(msg));
+      })
+    } else {
+      msg.type = 'binary'
+      file.vault.readBinary(file).then(data => {
+        let index = 1;
+        const chunks = this.splitData(data, blockSize);
+        console.log('文件分块: ' + chunks.length + '块')
+        // 发送每个分块
+        chunks.forEach(chunk => {
+          msg.data = index + ':' + chunks.length + ':' + arrayBufferToBase64(chunk)
+          index++
+          this.channel.send(JSON.stringify(msg));
+        });
+      })
+    }
+  }
+
+  private splitData(data: ArrayBuffer, blockSize: number): ArrayBuffer[] {
+    const chunks: ArrayBuffer[] = [];
+    const totalSize = data.byteLength;
+    const numChunks = Math.ceil(totalSize / blockSize);
+
+    for (let i = 0; i < totalSize; i += blockSize) {
+      const end = Math.min(i + blockSize, totalSize);
+      const chunk = data.slice(i, end);
+      const chunkInfo = new TextEncoder().encode(`${i}:${totalSize}:${numChunks}:`);
+      const combinedChunk = new Uint8Array(chunkInfo.byteLength + chunk.byteLength);
+      combinedChunk.set(new Uint8Array(chunkInfo), 0);
+      combinedChunk.set(new Uint8Array(chunk), chunkInfo.byteLength);
+      chunks.push(combinedChunk.buffer);
+    }
+
+    return chunks;
   }
 
   close() {
