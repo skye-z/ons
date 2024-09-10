@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile, TFolder } from 'obsidian';
+import { Notice, Plugin, TFile, TFolder, Vault } from 'obsidian';
 import { NSPluginSettings, NSDefaultSettings } from './src/model';
 import { PeerManager } from './src/peer-manager';
 import { NSSettingTab } from './src/setting';
@@ -29,9 +29,9 @@ export default class NSPlugin extends Plugin {
 		// 初始化监听器
 		this.initListener();
 		// 注册自动同步计时器
-		this.registerInterval(window.setInterval(
-			() => this.syncFilesAutomatically(), 5 * 60 * 1000
-		));
+		// this.registerInterval(window.setInterval(
+		// 	() => this.syncFilesAuto(), 5 * 60 * 1000
+		// ));
 	}
 	// 插件卸载
 	onunload() {
@@ -52,26 +52,26 @@ export default class NSPlugin extends Plugin {
 	initPeerManager() {
 		if (this.peerManager) this.peerManager.close()
 		if (this.settings.server)
-			this.peerManager = new PeerManager(this.settings.server, this.settings.devId, this.settings.pwd);
+			this.peerManager = new PeerManager(this);
 	}
 	// 初始化监听器
 	initListener() {
 		const { vault } = this.app;
 		vault.on('create', (file) => {
 			if (this.peerManager != null)
-				this.peerManager.sendOperate('create', file)
+				this.peerManager.sendOperate(this,'create', file, undefined)
 		})
 		vault.on('delete', (file) => {
 			if (this.peerManager != null)
-				this.peerManager.sendOperate('delete', file)
+				this.peerManager.sendOperate(this,'delete', file, undefined)
 		})
 		vault.on('modify', (file) => {
 			if (this.peerManager != null)
-				this.peerManager.sendOperate('update', file)
+				this.peerManager.sendOperate(this,'update', file, undefined)
 		})
-		vault.on('rename', (file,old) => {
+		vault.on('rename', (file, old) => {
 			if (this.peerManager != null)
-				this.peerManager.sendOperate('rename', file,old)
+				this.peerManager.sendOperate(this,'rename', file, old)
 		})
 	}
 	syncWork(type: string, name: string, path: string) {
@@ -95,7 +95,7 @@ export default class NSPlugin extends Plugin {
 			this.isSyncing = true; // 设置同步状态为进行中
 			try {
 				// 在这里调用同步文件的逻辑
-				this.syncFilesAutomatically();
+				this.syncFiles();
 				new Notice('手动同步已触发');
 			} finally {
 				this.isSyncing = false; // 同步完成后重置状态
@@ -103,12 +103,12 @@ export default class NSPlugin extends Plugin {
 		}
 	}
 	// 执行自动同步
-	private syncFilesAutomatically() {
+	private syncFiles() {
 		if (this.peerManager) {
 			// 在这里调用同步文件的逻辑
-			console.log('自动同步正在进行...');
+			console.log('文件同步准备中');
 			// 实际的同步逻辑应该在这里实现
-			this.peerManager.syncFiles()
+			this.peerManager.syncFiles(this.settings.lastSync)
 		}
 	}
 }

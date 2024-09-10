@@ -243,10 +243,6 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 	s.p2p.OnDataChannel(func(channel *webrtc.DataChannel) {
 		channel.OnOpen(func() {
 			log.Println("[P2P] data channel open")
-			err := dataChannel.SendText("Hello from Go!")
-			if err != nil {
-				log.Println("[P2P] Error sending initial message:", err)
-			}
 		})
 
 		channel.OnClose(func() {
@@ -257,7 +253,7 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 			log.Printf("[P2P] data channel error: %s", err.Error())
 		})
 		channel.OnMessage(func(msg webrtc.DataChannelMessage) {
-			VaultOperate(msg.Data)
+			VaultOperate(dataChannel, msg.Data)
 		})
 	})
 }

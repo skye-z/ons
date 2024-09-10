@@ -1,4 +1,5 @@
-import { arrayBufferToBase64, Notice, TFile, TFolder } from 'obsidian';
+import { Plugin, arrayBufferToBase64, Notice, TAbstractFile, TFile, TFolder, Vault } from 'obsidian';
+import NSPlugin from 'main';
 
 // 消息模型
 interface Message {
@@ -11,10 +12,10 @@ interface Message {
 
 interface SyncMessage {
   type: 'text' | 'binary' | 'directory' | undefined; // 消息类型
-  operate: 'create' | 'delete' | 'update' | 'rename' | undefined; // 操作类型
+  operate: 'create' | 'delete' | 'update' | 'rename' | 'check' | 'tree' | undefined; // 操作类型
   path: string | undefined; // 所在路径
   name: string | undefined; // 对象名称
-  data: string | undefined; // 实际数据
+  data: string | undefined | null; // 实际数据
 }
 
 export class PeerManager {
@@ -33,10 +34,10 @@ export class PeerManager {
   // 添加一个候选队列
   private iceCandidateQueue: RTCIceCandidateInit[] = [];
   // 构造函数
-  constructor(url: string, nabId: string, pass: string) {
-    this.nsaPath = 'wss://' + url + '/nat';
-    this.nabId = nabId;
-    this.pass = pass;
+  constructor(app: NSPlugin) {
+    this.nsaPath = 'wss://' + app.settings.server + '/nat';
+    this.nabId = app.settings.devId;
+    this.pass = app.settings.pwd;
     // 创建点对点连接
     this.p2pCon = new RTCPeerConnection({
       iceServers: [
@@ -45,13 +46,13 @@ export class PeerManager {
       ],
     });
     // 第一步 生成本地描述信息
-    this.settingLocalInfo()
+    this.settingLocalInfo(app, app.app.vault)
     // 第二步 连接 NSA
     this.nsa = this.connectnsa();
   }
 
   // 第一步 生成本地连接信息
-  private async settingLocalInfo() {
+  private async settingLocalInfo(app: NSPlugin, vault: Vault) {
     // 创建数据通道(必须在最前面)
     this.channel = this.p2pCon.createDataChannel('NSChanel')
     this.channel.onclose = () => console.log('数据通道已关闭');
@@ -61,7 +62,7 @@ export class PeerManager {
     // 监听网络节点变动
     this.p2pCon.onicecandidate = (event) => {
       if (event.candidate) {
-        console.log('网络节点信息', event.candidate);
+        // console.log('网络节点信息', event.candidate);
         if (this.p2pCon.localDescription && this.p2pCon.remoteDescription) {
           const candidateMsg: Message = {
             event: 'p2p-node',
@@ -72,7 +73,7 @@ export class PeerManager {
           };
           this.sendMessage(candidateMsg);
         } else {
-          console.log('等待描述设置完成再发送候选');
+          // console.log('等待描述设置完成再发送候选');
         }
       }
     };
@@ -93,10 +94,62 @@ export class PeerManager {
       dataChannel.onopen = () => {
         new Notice("NAS 已连接");
         console.log('数据通道开启');
-        this.syncFiles();
+        // this.syncFiles();
       };
       dataChannel.onmessage = (event) => {
-        console.log('收到数据:', event.data);
+        let msg: SyncMessage = JSON.parse(event.data)
+        console.log('收到数据:', msg);
+        if (msg.operate === 'tree') {
+          if (msg.data === undefined || msg.data === null || msg.data === "") return false
+          let list = vault.getAllLoadedFiles()
+          let data = JSON.parse(msg.data)
+
+          // 本地有云端没有
+          for (let i in list) {
+            let cloud;
+            let item = list[i]
+            if (item.path === '.' || item.path === '/') continue;
+            let exist = false
+            for (let x in data) {
+              if (item.path === data[x].path) {
+                exist = true;
+                cloud = data[x]
+                break;
+              }
+            }
+            if (!exist) {
+              // 新建文件
+              this.sendOperate(app, "create", item, undefined)
+              // 间隔一段时间后发送文件内容
+              setTimeout(() => {
+                this.sendOperate(app, "update", item, undefined)
+              }, 3000);
+            } else if (item instanceof TFile && item.stat.size !== cloud.size && item.stat.mtime - cloud.mtime > 3) {
+              this.sendOperate(app, "update", item, undefined)
+            }
+          }
+          // 云端有本地没有
+          for (let x in data) {
+            if (data[x].path === '.' || data[x].path === '/') continue;
+            let exist = false
+            for (let i in list) {
+              if (list[i].path === data[x].path) {
+                exist = true;
+                break;
+              }
+            }
+            if (!exist) {
+              let msg: SyncMessage = {
+                path: data[x].path,
+                name: data[x].name,
+                type: undefined,
+                data: undefined,
+                operate: 'delete'
+              };
+              this.channel.send(JSON.stringify(msg));
+            }
+          }
+        }
       };
     };
   }
@@ -105,13 +158,13 @@ export class PeerManager {
   private connectnsa(): WebSocket {
     const nsa = new WebSocket(`${this.nsaPath}`);
     nsa.onopen = () => {
-      console.log('与 NSA 的通信端口已打开');
+      // console.log('与 NSA 的通信端口已打开');
       // 第三步 在 NSA 上注册连接
       this.register();
     };
     nsa.onmessage = (event: MessageEvent) => {
       const message: Message = JSON.parse(event.data);
-      console.log('收到 NSA 消息:', message);
+      // console.log('收到 NSA 消息:', message);
       // 连接注册响应
       if (message.event === 'connect') {
         // 第四步 发送本地连接信息
@@ -223,15 +276,43 @@ export class PeerManager {
     }
   }
 
-  syncFiles() {
-    console.log('文件同步正在进行...');
-    // 1. 检查是否需要更新
-    // 2. nas新则拉取
-    // 3. 本地新则推送
-    this.channel.send('Hello from JavaScript!')
+  syncFiles(lastSync: number) {
+    if (this.channel.readyState != 'open') return false
+    console.log('已请求文件同步');
+    // let vault = plugin.app.vault
+    let msg: SyncMessage = {
+      path: './',
+      name: '.synclog',
+      type: 'text',
+      data: lastSync + '',
+      operate: 'check'
+    };
+    this.channel.send(JSON.stringify(msg));
   }
 
-  sendOperate(operate: 'create' | 'delete' | 'update' | 'rename', file: TFile | TFolder, old: string | undefined) {
+  async getSyncCheckTime(vault: Vault) {
+    let logPath = "/.synclog";
+    var checkFile = vault.getFileByPath(logPath)
+    if (checkFile == null) {
+      vault.create(".synclog", '0').then(res => {
+        console.log(res)
+      })
+      return 0
+    } else return parseInt(await vault.cachedRead(checkFile))
+  }
+
+  setSyncCheckTime(vault: Vault, time: number) {
+    let logPath = "/.synclog";
+    var checkFile = vault.getFileByPath(logPath)
+    console.log(checkFile)
+    if (checkFile == null) {
+      vault.create(".synclog", time + '')
+    } else {
+      vault.modify(checkFile, time + '')
+    }
+  }
+
+  sendOperate(app: NSPlugin, operate: 'create' | 'delete' | 'update' | 'rename', file: TFile | TFolder | TAbstractFile, old: string | undefined) {
     const blockSize = 40 * 1024;
     // 发送文本消息
     let msg: SyncMessage = {
@@ -241,64 +322,66 @@ export class PeerManager {
       data: undefined,
       operate
     };
+    if (this.channel.readyState != 'open') return
     // 删除操作, 直接发送
     if (operate === 'delete') {
+      msg.path = file.path
       this.channel.send(JSON.stringify(msg));
+      this.updateSyncTime(app)
       return
     }
     // 重命名操作, 直接发送
     if (operate === 'rename') {
       msg.data = old;
       this.channel.send(JSON.stringify(msg));
+      this.updateSyncTime(app)
       return
     }
     // 目标为文件夹, 直接发送
     if (file instanceof TFolder) {
       msg.type = 'directory'
       this.channel.send(JSON.stringify(msg));
+      this.updateSyncTime(app)
       return
-    }
-    // 判断文件类型
-    if (file.extension === 'md') {
-      msg.type = 'text'
-      file.vault.cachedRead(file).then(data => {
-        const encoder = new TextEncoder();
-        const encodedText = encoder.encode(data);
-        msg.data = btoa(String.fromCharCode(...new Uint8Array(encodedText)))
-        this.channel.send(JSON.stringify(msg));
-      })
-    } else {
-      msg.type = 'binary'
-      file.vault.readBinary(file).then(data => {
-        let index = 1;
-        const chunks = this.splitData(data, blockSize);
-        console.log('文件分块: ' + chunks.length + '块')
-        // 发送每个分块
-        chunks.forEach(chunk => {
-          msg.data = index + ':' + chunks.length + ':' + arrayBufferToBase64(chunk)
-          index++
+    } else if (file instanceof TFile) {
+      // 判断文件类型
+      if (file.extension === 'md') {
+        msg.type = 'text'
+        file.vault.cachedRead(file).then(data => {
+          const encoder = new TextEncoder();
+          const encodedText = encoder.encode(data);
+          msg.data = btoa(String.fromCharCode(...new Uint8Array(encodedText)))
           this.channel.send(JSON.stringify(msg));
+        })
+      } else {
+        msg.type = 'binary'
+        file.vault.readBinary(file).then(data => {
+          let index = 1;
+          const base64Data = arrayBufferToBase64(data);
+          const chunks = this.splitBase64Data(base64Data, blockSize);
+          chunks.forEach(chunk => {
+            msg.data = index + ':' + chunks.length + ':' + chunk;
+            index++;
+            this.channel.send(JSON.stringify(msg));
+          });
         });
-      })
+      }
+      this.updateSyncTime(app)
     }
   }
 
-  private splitData(data: ArrayBuffer, blockSize: number): ArrayBuffer[] {
-    const chunks: ArrayBuffer[] = [];
-    const totalSize = data.byteLength;
-    const numChunks = Math.ceil(totalSize / blockSize);
-
-    for (let i = 0; i < totalSize; i += blockSize) {
-      const end = Math.min(i + blockSize, totalSize);
-      const chunk = data.slice(i, end);
-      const chunkInfo = new TextEncoder().encode(`${i}:${totalSize}:${numChunks}:`);
-      const combinedChunk = new Uint8Array(chunkInfo.byteLength + chunk.byteLength);
-      combinedChunk.set(new Uint8Array(chunkInfo), 0);
-      combinedChunk.set(new Uint8Array(chunk), chunkInfo.byteLength);
-      chunks.push(combinedChunk.buffer);
+  private splitBase64Data(data: string, blockSize: number): string[] {
+    const chunks = [];
+    for (let i = 0; i < data.length; i += blockSize) {
+      const end = Math.min(i + blockSize, data.length);
+      chunks.push(data.substring(i, end));
     }
-
     return chunks;
+  }
+
+  private updateSyncTime(app: NSPlugin) {
+    app.settings.lastSync = Math.trunc(Date.now() / 1000);
+    app.saveData(app.settings)
   }
 
   close() {
