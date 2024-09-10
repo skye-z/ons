@@ -17,6 +17,7 @@ import (
 )
 
 const vaultPath = "./vault"
+const blockSize = 40 * 1024
 
 var (
 	fileChunks map[string]map[int]string // 存储文件名和对应的分块数据
@@ -42,6 +43,8 @@ func VaultOperate(channel *webrtc.DataChannel, data []byte) {
 
 	// 根据操作类型执行对应的操作
 	switch syncMsg.Operate {
+	case "tree":
+		handleTree(channel, syncMsg.Data)
 	case "check":
 		handleCheck(channel, syncMsg)
 	case "create":
@@ -58,22 +61,18 @@ func VaultOperate(channel *webrtc.DataChannel, data []byte) {
 }
 
 // 读取.synclog文件中的时间戳
-func getSyncCheckTime() (int64, error) {
+func getSyncCheckTime() int64 {
 	syncLogPath := filepath.Join(vaultPath, ".synclog")
 	data, err := os.ReadFile(syncLogPath)
-	if os.IsNotExist(err) {
-		// 文件不存在，初始化时间为当前时间
-		// saveSyncLog(time.Now())
-		return 0, nil
-	} else if err != nil {
-		return 0, err
+	if err != nil {
+		return 0
 	}
 
 	timestamp, err := strconv.ParseInt(string(data), 10, 64)
 	if err != nil {
-		return 0, err
+		return 0
 	}
-	return timestamp, nil
+	return timestamp
 }
 
 // 保存操作日志
@@ -81,6 +80,55 @@ func saveSyncLog() {
 	logPath := filepath.Join(vaultPath, ".synclog")
 	if err := os.WriteFile(logPath, []byte(fmt.Sprint(time.Now().Unix()-1)), 0644); err != nil {
 		log.Printf("[Vault] error writing sync log: %v", err)
+	}
+}
+
+// 处理文件树比对
+func handleTree(channel *webrtc.DataChannel, data string) {
+	var files []util.FileInfo
+	if err := json.Unmarshal([]byte(data), &files); err != nil {
+		log.Printf("[Vault] failed to unmarshal message: %v", err)
+		return
+	}
+	serverFiles, err := util.ScanDirectory(vaultPath)
+	if err != nil {
+		log.Printf("[Vault] scan directory error: %v", err)
+		return
+	}
+	// 云端有客户端没有
+	for _, sf := range serverFiles {
+		if sf.Path == "." || sf.Path == "/" {
+			continue
+		}
+		var local util.FileInfo
+		exist := false
+		for _, cf := range files {
+			if cf.Path == sf.Path {
+				exist = true
+				local = cf
+				break
+			}
+		}
+		if !exist {
+			sendCreate(channel, sf.Path, sf.Name)
+		} else if sf.Size != local.Size && sf.Mtime-local.Mtime > 3 {
+			sendUpdate(channel, sf.Path, sf.Name)
+		}
+	}
+	// 客户端有云端没有
+	for _, cf := range files {
+		if cf.Path == "." || cf.Path == "/" {
+			continue
+		}
+		exist := false
+		for _, sf := range serverFiles {
+			if cf.Path == sf.Path {
+				exist = true
+			}
+		}
+		if !exist {
+			sendDelete(channel, cf.Path, cf.Name)
+		}
 	}
 }
 
@@ -94,8 +142,8 @@ func handleCheck(channel *webrtc.DataChannel, msg SyncMessage) {
 	}
 
 	// 读取服务端.synclog中的时间
-	serverDate, err := getSyncCheckTime()
-	if err != nil {
+	serverDate := getSyncCheckTime()
+	if serverDate == 0 {
 		log.Printf("[Vault] error getting server sync check time: %v", err)
 		return
 	}
@@ -150,6 +198,25 @@ func handleCreate(msg SyncMessage) {
 	}
 }
 
+// 发送创建
+func sendCreate(channel *webrtc.DataChannel, path, name string) {
+	msg := SyncMessage{
+		Type:    "binary",
+		Operate: "create",
+		Path:    filepath.Dir(path),
+		Name:    name,
+		Data:    "",
+	}
+	if name == "" {
+		msg.Type = "directory"
+	} else if strings.HasSuffix(name, ".md") {
+		msg.Type = "text"
+	}
+	msgBytes, _ := json.Marshal(msg)
+	channel.SendText(string(msgBytes))
+	sendUpdate(channel, path, name)
+}
+
 // 处理删除任务
 func handleDelete(path string) {
 	log.Printf("rename: %s", path)
@@ -160,10 +227,91 @@ func handleDelete(path string) {
 	saveSyncLog()
 }
 
+// 发送删除
+func sendDelete(channel *webrtc.DataChannel, path, name string) {
+	msg := SyncMessage{
+		Type:    "binary",
+		Operate: "delete",
+		Path:    filepath.Dir(path),
+		Name:    name,
+		Data:    "",
+	}
+	if name == "" {
+		msg.Type = "directory"
+	} else if strings.HasSuffix(name, ".md") {
+		msg.Type = "text"
+	}
+	msgBytes, _ := json.Marshal(msg)
+	channel.SendText(string(msgBytes))
+}
+
 // 处理更新任务
 func handleUpdate(msg SyncMessage) {
 	msg.Path = filepath.Join(vaultPath, msg.Path)
 	handleChunkedDataIfBinary(msg)
+}
+
+// 发送更新
+func sendUpdate(channel *webrtc.DataChannel, path, name string) {
+	msg := SyncMessage{
+		Operate: "update",
+		Path:    filepath.Dir(path),
+		Name:    name,
+	}
+	if name == "" {
+		return
+	}
+	if strings.HasSuffix(name, ".md") {
+		msg.Type = "text"
+	} else {
+		msg.Type = "binary"
+	}
+
+	// 读取完整文件
+	fileData, err := os.ReadFile(filepath.Join(vaultPath, path))
+	if err != nil {
+		log.Println("[Vault] read file error")
+		return
+	}
+	// 将文件数据转换为Base64编码的字符串
+	base64Data := base64.StdEncoding.EncodeToString(fileData)
+
+	if msg.Type == "text" {
+		msg.Data = base64Data
+		msgBytes, _ := json.Marshal(msg)
+		channel.SendText(string(msgBytes))
+	} else {
+		// 分块并发送
+		sendBase64Chunks(channel, &msg, base64Data)
+	}
+}
+
+// 发送分块数据
+func sendBase64Chunks(channel *webrtc.DataChannel, msg *SyncMessage, base64Data string) {
+	// 计算总块数
+	totalChunks := (len(base64Data) + blockSize - 1) / blockSize
+
+	// 分块并发送
+	for i := 0; i < totalChunks; i++ {
+		start := i * blockSize
+		end := start + blockSize
+		if end > len(base64Data) {
+			end = len(base64Data)
+		}
+
+		// 拼接分块数据
+		chunkData := fmt.Sprintf("%d:%d:%s", i+1, totalChunks, base64Data[start:end])
+
+		// 更新消息内容
+		msg.Data = chunkData
+
+		msgBytes, err := json.Marshal(msg)
+		if err != nil {
+			log.Printf("[Vault] failed to unmarshal message: %v", err)
+			return
+		}
+		channel.SendText(string(msgBytes))
+	}
 }
 
 // 处理重命名任务

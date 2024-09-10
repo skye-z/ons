@@ -13,8 +13,8 @@ import (
 type FileInfo struct {
 	Name  string `json:"name"`
 	Path  string `json:"path"`
-	Ctime string `json:"ctime"`
-	Mtime string `json:"mtime"`
+	Ctime int64  `json:"ctime"`
+	Mtime int64  `json:"mtime"`
 	Size  int64  `json:"size"`
 }
 
@@ -42,16 +42,12 @@ func ScanDirectory(vaultPath string) ([]FileInfo, error) {
 			return nil
 		}
 
-		// 创建时间和最后修改时间
-		ctime := info.Sys().(*syscall.Stat_t).Ctimespec.Nsec
-		mtime := info.ModTime().Unix()
-
 		// 添加文件信息到列表
 		files = append(files, FileInfo{
 			Name:  name,
 			Path:  relativePath,
-			Ctime: fmt.Sprintf("%d", ctime),
-			Mtime: fmt.Sprintf("%d", mtime),
+			Ctime: info.Sys().(*syscall.Stat_t).Ctimespec.Nsec,
+			Mtime: info.ModTime().Unix(),
 			Size:  info.Size(),
 		})
 
