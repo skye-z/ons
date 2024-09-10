@@ -155,7 +155,7 @@ func handleChunkedDataIfBinary(msg SyncMessage) {
 
 		currentChunk, _ := strconv.Atoi(parts[0])
 		totalChunks, _ := strconv.Atoi(parts[1])
-		chunkData := parts[2]
+		base64ChunkData := parts[2]
 
 		// 获取文件名的完整路径
 		filePath := filepath.Join(msg.Path, msg.Name)
@@ -173,7 +173,7 @@ func handleChunkedDataIfBinary(msg SyncMessage) {
 		}
 
 		// 将数据追加到对应文件的分块列表中
-		fileChunks[filePath][currentChunk] = chunkData
+		fileChunks[filePath][currentChunk] = base64ChunkData
 
 		// 检查是否所有分块都已经接收完毕
 		if len(fileChunks[filePath]) == totalChunks {
@@ -182,7 +182,7 @@ func handleChunkedDataIfBinary(msg SyncMessage) {
 			delete(fileChunks, filePath)
 
 			// 将合并后的数据写入文件
-			if err := os.WriteFile(filePath, []byte(mergedData), 0644); err != nil {
+			if err := os.WriteFile(filePath, mergedData, 0644); err != nil {
 				log.Printf("[Vault] error writing merged data to file: %v", err)
 			}
 		}
@@ -193,6 +193,7 @@ func handleChunkedDataIfBinary(msg SyncMessage) {
 			log.Printf("[Vault] error decoding base64 data: %v", err)
 			return
 		}
+
 		// 获取文件名的完整路径
 		filePath := filepath.Join(msg.Path, msg.Name)
 
@@ -202,14 +203,25 @@ func handleChunkedDataIfBinary(msg SyncMessage) {
 			log.Printf("[Vault] error ensuring directory exists: %v", err)
 			return
 		}
-		if err := os.WriteFile(filepath.Join(msg.Path, msg.Name), data, 0644); err != nil {
+
+		// 将解码后的数据写入文件
+		if err := os.WriteFile(filePath, data, 0644); err != nil {
 			log.Printf("[Vault] error writing file: %v", err)
 		}
 	}
 }
 
+// 确保目录存在
+func ensureDirExists(dirPath string) error {
+	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dirPath, err)
+	}
+	return nil
+}
+
+// 合并分块数据
 func mergeChunks(chunks map[int]string) []byte {
-	var mergedData []byte
+	var mergedData string
 	var keys []int
 
 	// 将keys排序
@@ -220,20 +232,14 @@ func mergeChunks(chunks map[int]string) []byte {
 
 	// 按照序号合并数据
 	for _, k := range keys {
-		decodedChunk, err := base64.StdEncoding.DecodeString(chunks[k])
-		if err != nil {
-			log.Printf("[Vault] error decoding base64 chunk data: %v", err)
-			continue
-		}
-		mergedData = append(mergedData, decodedChunk...)
+		mergedData += chunks[k]
 	}
-	return mergedData
-}
 
-// 确保目录存在
-func ensureDirExists(dirPath string) error {
-	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", dirPath, err)
+	// 解码Base64编码的数据
+	decodedChunkData, err := base64.StdEncoding.DecodeString(mergedData)
+	if err != nil {
+		log.Printf("[Vault] error decoding base64 chunk data: %v", err)
+		return nil
 	}
-	return nil
+	return decodedChunkData
 }
