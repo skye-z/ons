@@ -1,4 +1,4 @@
-import { Plugin, arrayBufferToBase64, Notice, TAbstractFile, TFile, TFolder, Vault } from 'obsidian';
+import { arrayBufferToBase64, base64ToArrayBuffer, Notice, TAbstractFile, TFile, TFolder, Vault } from 'obsidian';
 import NSPlugin from 'main';
 
 // 消息模型
@@ -12,13 +12,18 @@ interface Message {
 
 interface SyncMessage {
   type: 'text' | 'binary' | 'directory' | undefined; // 消息类型
-  operate: 'create' | 'delete' | 'update' | 'rename' | 'check' | 'tree' | undefined; // 操作类型
+  operate: 'create' | 'delete' | 'update' | 'rename' | 'check' | 'tree' | 'tree-none' | undefined; // 操作类型
   path: string | undefined; // 所在路径
   name: string | undefined; // 对象名称
   data: string | undefined | null; // 实际数据
 }
 
 export class PeerManager {
+  private isSync: boolean;
+  private syncStateTimer: NodeJS.Timeout;
+  private reConnectNumber: number;
+  private reConnectTimer: NodeJS.Timeout;
+  private chunkCache: Map<string, string[]> = new Map();
   // 服务器A, 作为信令和中转服务器
   private nsa: WebSocket;
   // NSA 地址(wss://....)
@@ -35,6 +40,8 @@ export class PeerManager {
   private iceCandidateQueue: RTCIceCandidateInit[] = [];
   // 构造函数
   constructor(app: NSPlugin) {
+    this.isSync = false;
+    this.reConnectNumber = 0;
     this.nsaPath = 'wss://' + app.settings.server + '/nat';
     this.nabId = app.settings.devId;
     this.pass = app.settings.pwd;
@@ -48,7 +55,7 @@ export class PeerManager {
     // 第一步 生成本地描述信息
     this.settingLocalInfo(app, app.app.vault)
     // 第二步 连接 NSA
-    this.nsa = this.connectnsa();
+    this.nsa = this.connectnsa(app);
   }
 
   // 第一步 生成本地连接信息
@@ -79,8 +86,10 @@ export class PeerManager {
     };
     this.p2pCon.oniceconnectionstatechange = () => {
       console.log('连接状态更新:', this.p2pCon.iceConnectionState);
-      if (this.p2pCon.iceConnectionState === 'connected') {
-        console.log('对等连接已建立');
+      if (this.p2pCon.iceConnectionState === 'disconnected') {
+        new Notice("⛓️‍💥 NAS 连接已断开");
+        app.status.setText('🟡 NAS 已断开');
+        this.reConnect(app)
       }
     };
 
@@ -92,70 +101,201 @@ export class PeerManager {
     this.p2pCon.ondatachannel = (event) => {
       const dataChannel = event.channel;
       dataChannel.onopen = () => {
-        new Notice("NAS 已连接");
-        console.log('数据通道开启');
-        // this.syncFiles();
+        clearTimeout(this.reConnectTimer)
+        this.reConnectNumber = 0
+        app.status.setText('🟢 NAS 已连接');
+        new Notice("🚀 NAS 已连接");
       };
       dataChannel.onmessage = (event) => {
         let msg: SyncMessage = JSON.parse(event.data)
-        console.log('收到数据:', msg);
-        if (msg.operate === 'tree') {
-          if (msg.data === undefined || msg.data === null || msg.data === "") return false
-          let list = vault.getAllLoadedFiles()
-          let data = JSON.parse(msg.data)
+        // console.log('收到数据:', msg);
 
-          // 本地有云端没有
-          for (let i in list) {
-            let cloud;
-            let item = list[i]
-            if (item.path === '.' || item.path === '/') continue;
-            let exist = false
-            for (let x in data) {
-              if (item.path === data[x].path) {
-                exist = true;
-                cloud = data[x]
-                break;
-              }
-            }
-            if (!exist) {
-              // 新建文件
-              this.sendOperate(app, "create", item, undefined)
-              // 间隔一段时间后发送文件内容
-              setTimeout(() => {
-                this.sendOperate(app, "update", item, undefined)
-              }, 3000);
-            } else if (item instanceof TFile && item.stat.size !== cloud.size && item.stat.mtime - cloud.mtime > 3) {
-              this.sendOperate(app, "update", item, undefined)
-            }
-          }
-          // 云端有本地没有
-          for (let x in data) {
-            if (data[x].path === '.' || data[x].path === '/') continue;
-            let exist = false
-            for (let i in list) {
-              if (list[i].path === data[x].path) {
-                exist = true;
-                break;
-              }
-            }
-            if (!exist) {
-              let msg: SyncMessage = {
-                path: data[x].path,
-                name: data[x].name,
-                type: undefined,
-                data: undefined,
-                operate: 'delete'
-              };
-              this.channel.send(JSON.stringify(msg));
-            }
-          }
+        if (msg.operate === 'tree') this.handleTree(app, vault, msg)
+        else if (msg.operate === 'tree-none') {
+          new Notice("😆 同步结束, 数据已是最新");
+          this.syncOver();
         }
+        else if (msg.operate === 'create') this.handleCreate(app, vault, msg)
+        else if (msg.operate === 'delete') this.handleDelete(app, vault, msg)
+        else if (msg.operate === 'update') this.handleUpdate(app, vault, msg)
       };
     };
   }
 
+  private reConnect(app: NSPlugin){
+    if (this.reConnectNumber < 3) {
+      clearTimeout(this.reConnectTimer)
+      this.reConnectTimer = setTimeout(() => {
+        this.reConnectNumber++
+        new Notice("第"+this.reConnectNumber+"次尝试重新连接...");
+        this.p2pCon = new RTCPeerConnection({
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun.nextcloud.com:443' }
+          ],
+        });
+        this.settingLocalInfo(app, app.app.vault)
+        this.nsa = this.connectnsa(app);
+      }, 3000)
+    }
+  }
+
+  private handleCreate(app: NSPlugin, vault: Vault, msg: SyncMessage) {
+    this.isSync = true;
+    vault.create(msg.path + '/' + msg.name, "")
+    this.updateSyncTime(app)
+    this.syncOver();
+  }
+
+  private handleDelete(app: NSPlugin, vault: Vault, msg: SyncMessage) {
+    this.isSync = true;
+    let file = vault.getAbstractFileByPath(msg.path + '/' + msg.name)
+    if (file == null) return
+    vault.delete(file, false)
+    this.updateSyncTime(app)
+    this.syncOver();
+  }
+
+  private handleUpdate(app: NSPlugin, vault: Vault, msg: SyncMessage) {
+    this.isSync = true;
+    let path = msg.path === '.' ? (msg.name) : (msg.path + '/' + msg.name)
+    if (path == undefined) return
+    let file = vault.getAbstractFileByPath(path)
+    console.log(path, file)
+    if (file == null) return
+    if (msg.type === 'text') {
+      if (file instanceof TFile) {
+        if (msg.data == null || msg.data == undefined) return;
+        const decoder = new TextDecoder("utf-8");
+        vault.modify(file, decoder.decode(new Uint8Array(Array.from(atob(msg.data), c => c.charCodeAt(0)))))
+      }
+    } else if (msg.type === 'binary') {
+      if (file instanceof TFile) {
+        if (msg.data == null || msg.data == undefined) return;
+        this.handleBinaryChunk(vault, file, msg.data);
+      }
+    }
+    this.updateSyncTime(app);
+    this.syncOver();
+  }
+
+  private syncOver() {
+    clearTimeout(this.syncStateTimer)
+    this.syncStateTimer = setTimeout(() => {
+      this.isSync = false
+    }, 2000)
+  }
+
+  private handleBinaryChunk(vault: Vault, file: TFile, msg: string) {
+    const parts = msg.split(':');
+    if (parts.length !== 3) {
+      console.error('Invalid chunk data format:', msg);
+      return;
+    }
+
+    const chunkIdx = parseInt(parts[0], 10);
+    const totalChunks = parseInt(parts[1], 10);
+    const chunkBase64 = parts[2];
+
+    const key = `${file.path}:${totalChunks}`;
+    let chunks = this.chunkCache.get(key) || [];
+    chunks[chunkIdx - 1] = chunkBase64;
+    this.chunkCache.set(key, chunks);
+
+    if (chunks.length === totalChunks) {
+      const code = chunks.join('');
+      vault.modifyBinary(file, base64ToArrayBuffer(code));
+      this.chunkCache.delete(key);
+    }
+  }
+
+  private handleTree(app: NSPlugin, vault: Vault, msg: SyncMessage) {
+    let list = vault.getAllLoadedFiles()
+    this.isSync = true;
+    if (msg.data === undefined || msg.data === null || msg.data === "") {
+      // 发送本地文件树
+      let tree = [];
+      for (let i in list) {
+        let item = list[i]
+        if (item instanceof TFile) {
+          tree.push({
+            name: item.name,
+            path: item.path,
+            ctime: Math.floor(item.stat.ctime / 1000),
+            mtime: Math.floor(item.stat.mtime / 1000),
+            size: item.stat.size
+          })
+        } else if (item instanceof TFolder) {
+          tree.push({
+            name: null,
+            path: item.path,
+            ctime: null,
+            mtime: null,
+            size: null
+          })
+        }
+      }
+      let msg: SyncMessage = {
+        path: "",
+        name: "",
+        type: undefined,
+        data: JSON.stringify(tree),
+        operate: 'tree'
+      };
+      this.channel.send(JSON.stringify(msg));
+      return false
+    }
+    let data = JSON.parse(msg.data)
+
+    // 本地有云端没有
+    for (let i in list) {
+      let cloud;
+      let item = list[i]
+      if (item.path === '.' || item.path === '/') continue;
+      let exist = false
+      for (let x in data) {
+        if (item.path === data[x].path) {
+          exist = true;
+          cloud = data[x]
+          break;
+        }
+      }
+      if (!exist) {
+        // 新建文件
+        this.sendOperate(app, "create", item, undefined)
+        // 间隔一段时间后发送文件内容
+        setTimeout(() => {
+          this.sendOperate(app, "update", item, undefined)
+        }, 2000);
+      } else if (item instanceof TFile && item.stat.size !== cloud.size && item.stat.mtime - cloud.mtime > 3) {
+        this.sendOperate(app, "update", item, undefined)
+      }
+    }
+    // 云端有本地没有
+    for (let x in data) {
+      if (data[x].path === '.' || data[x].path === '/') continue;
+      let exist = false
+      for (let i in list) {
+        if (list[i].path === data[x].path) {
+          exist = true;
+          break;
+        }
+      }
+      if (!exist) {
+        let msg: SyncMessage = {
+          path: data[x].path,
+          name: data[x].name,
+          type: undefined,
+          data: undefined,
+          operate: 'delete'
+        };
+        this.channel.send(JSON.stringify(msg));
+      }
+    }
+  }
+
   // 第二步 连接 NSA
-  private connectnsa(): WebSocket {
+  private connectnsa(app: NSPlugin): WebSocket {
     const nsa = new WebSocket(`${this.nsaPath}`);
     nsa.onopen = () => {
       // console.log('与 NSA 的通信端口已打开');
@@ -174,7 +314,7 @@ export class PeerManager {
       } else if (message.event === 'p2p-node') {
         this.setNodeInfo(message.data);
       } else if (message.event === 'p2p-error' || message.event === 'error') {
-        this.outError(message.data);
+        this.outError(app, message.data);
       }
     };
     nsa.onerror = (error) => { console.error('与 NSA 连接出错:', error) };
@@ -229,23 +369,26 @@ export class PeerManager {
     }
   }
 
-  private async outError(data: any) {
-    console.log(data)
+  private async outError(app: NSPlugin, data: any) {
     let msg = data
     switch (data) {
       case 'password error':
+        app.status.setText('连接密码错误');
         msg = '连接密码错误'
         break
       case 10001:
+        app.status.setText('连接失败');
         msg = '协议无法对齐'
         break
       case 10002:
+        app.status.setText('连接失败');
         msg = '不支持的接入类型'
         break
       case 10003:
         msg = '不支持的消息类型'
         break
       case 10004:
+        app.status.setText('设备不存在');
         msg = '设备不存在'
         break
       case 10005:
@@ -258,7 +401,9 @@ export class PeerManager {
         msg = '不支持的消息格式'
         break
       case 10008:
+        app.status.setText('🔴 NAS 已离线');
         msg = 'NAS 已离线'
+        this.reConnect(app)
         break
       default:
         msg = '不支持的消息格式'
@@ -277,9 +422,11 @@ export class PeerManager {
   }
 
   syncFiles(lastSync: number) {
-    if (this.channel.readyState != 'open') return false
+    if (this.channel.readyState != 'open') {
+      new Notice("⚠️ 未连接到 NAS, 请重新连接后再试");
+      return false
+    }
     console.log('已请求文件同步');
-    // let vault = plugin.app.vault
     let msg: SyncMessage = {
       path: './',
       name: '.synclog',
@@ -313,6 +460,7 @@ export class PeerManager {
   }
 
   sendOperate(app: NSPlugin, operate: 'create' | 'delete' | 'update' | 'rename', file: TFile | TFolder | TAbstractFile, old: string | undefined) {
+    if (this.isSync) return false
     const blockSize = 40 * 1024;
     // 发送文本消息
     let msg: SyncMessage = {

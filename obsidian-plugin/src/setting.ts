@@ -1,5 +1,5 @@
 import NSPlugin from 'main';
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 
 // 设置面板
 export class NSSettingTab extends PluginSettingTab {
@@ -15,20 +15,8 @@ export class NSSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('同步模式')
-			.setDesc('在互联网中访问可以访问你的 NAS 的地址')
-			.addDropdown(dropdown => dropdown
-				.addOption('auto', '自动同步')
-				.addOption('manual', '手动同步')
-				.setValue(this.plugin.settings.model)
-				.onChange(async (value) => {
-					this.plugin.settings.model = value;
-					this.plugin.status.setText(value === 'auto' ? '自动模式':'手动模式');
-					await this.plugin.saveSettings();
-				}));
-		new Setting(containerEl)
-			.setName('穿透服务器')
-			.setDesc('无法从互联网访问你的 NAS 时, 将由此服务器提供穿透服务')
+			.setName('中控服务器')
+			.setDesc('中控负责登记 NAS 设备, 提供鉴权并促成连接的建立')
 			.addText(text => text
 				.setPlaceholder('ons.betax.dev')
 				.setValue(this.plugin.settings.server)
@@ -37,8 +25,8 @@ export class NSSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName('穿透标识')
-			.setDesc('NAS 中的唯一标识, 让你能在穿透服务器中找到你的 NAS')
+			.setName('唯一标识')
+			.setDesc('让 Obsidian 能在中控服务器中找到你的 NAS 的唯一标识')
 			.addText(text => text
 				.setPlaceholder('000000')
 				.setValue(this.plugin.settings.devId)
@@ -62,6 +50,7 @@ export class NSSettingTab extends PluginSettingTab {
 			.addButton(text => text
 				.setButtonText("开始测试")
 				.onClick(async () => {
+					new Notice("开始测试, 请留意右上角提示与右下角的状态")
 					this.plugin.initPeerManager();
 				}));
 	}

@@ -8,19 +8,24 @@ export default class NSPlugin extends Plugin {
 	settings: NSPluginSettings;
 	status: HTMLElement;
 	private peerManager: PeerManager | null = null;
-	private isSyncing: boolean = false;
+	isSyncing: boolean = false;
 	// 插件加载
 	async onload() {
 		// 加载设置
 		await this.loadSettings();
 		// 创建状态栏显示区
 		this.status = this.addStatusBarItem();
-		this.status.setText(this.settings.model === 'auto' ? '自动模式' : '手动模式');
+		this.status.setText('连接中...');
 		// 添加更新命令
 		this.addCommand({
-			id: 'ons',
+			id: 'onsa',
 			name: '手动更新',
 			callback: () => this.syncFilesManually()
+		});
+		this.addCommand({
+			id: 'onsb',
+			name: '重新连接',
+			callback: () => this.initPeerManager()
 		});
 		// 创建设置选项卡
 		this.addSettingTab(new NSSettingTab(this.app, this));
@@ -51,27 +56,29 @@ export default class NSPlugin extends Plugin {
 	// 初始化 PeerManager
 	initPeerManager() {
 		if (this.peerManager) this.peerManager.close()
-		if (this.settings.server)
+		if (this.settings.server) {
+			this.status.setText('连接中...');
 			this.peerManager = new PeerManager(this);
+		}
 	}
 	// 初始化监听器
 	initListener() {
 		const { vault } = this.app;
 		vault.on('create', (file) => {
-			if (this.peerManager != null)
-				this.peerManager.sendOperate(this,'create', file, undefined)
+			if (this.peerManager != null && !this.isSyncing)
+				this.peerManager.sendOperate(this, 'create', file, undefined)
 		})
 		vault.on('delete', (file) => {
-			if (this.peerManager != null)
-				this.peerManager.sendOperate(this,'delete', file, undefined)
+			if (this.peerManager != null && !this.isSyncing)
+				this.peerManager.sendOperate(this, 'delete', file, undefined)
 		})
 		vault.on('modify', (file) => {
-			if (this.peerManager != null)
-				this.peerManager.sendOperate(this,'update', file, undefined)
+			if (this.peerManager != null && !this.isSyncing)
+				this.peerManager.sendOperate(this, 'update', file, undefined)
 		})
 		vault.on('rename', (file, old) => {
-			if (this.peerManager != null)
-				this.peerManager.sendOperate(this,'rename', file, old)
+			if (this.peerManager != null && !this.isSyncing)
+				this.peerManager.sendOperate(this, 'rename', file, old)
 		})
 	}
 	syncWork(type: string, name: string, path: string) {
@@ -92,11 +99,8 @@ export default class NSPlugin extends Plugin {
 		}
 
 		if (this.peerManager) {
-			this.isSyncing = true; // 设置同步状态为进行中
 			try {
-				// 在这里调用同步文件的逻辑
 				this.syncFiles();
-				new Notice('手动同步已触发');
 			} finally {
 				this.isSyncing = false; // 同步完成后重置状态
 			}
@@ -105,6 +109,7 @@ export default class NSPlugin extends Plugin {
 	// 执行自动同步
 	private syncFiles() {
 		if (this.peerManager) {
+			new Notice('正在同步中, 请勿编辑和操作');
 			// 在这里调用同步文件的逻辑
 			console.log('文件同步准备中');
 			// 实际的同步逻辑应该在这里实现

@@ -85,6 +85,7 @@ func saveSyncLog() {
 
 // 处理文件树比对
 func handleTree(channel *webrtc.DataChannel, data string) {
+	idle := true
 	var files []util.FileInfo
 	if err := json.Unmarshal([]byte(data), &files); err != nil {
 		log.Printf("[Vault] failed to unmarshal message: %v", err)
@@ -97,7 +98,7 @@ func handleTree(channel *webrtc.DataChannel, data string) {
 	}
 	// 云端有客户端没有
 	for _, sf := range serverFiles {
-		if sf.Path == "." || sf.Path == "/" {
+		if sf.Path == "." || sf.Path == "/" || sf.Name == ".DS_Store" {
 			continue
 		}
 		var local util.FileInfo
@@ -110,14 +111,18 @@ func handleTree(channel *webrtc.DataChannel, data string) {
 			}
 		}
 		if !exist {
+			idle = false
 			sendCreate(channel, sf.Path, sf.Name)
-		} else if sf.Size != local.Size && sf.Mtime-local.Mtime > 3 {
-			sendUpdate(channel, sf.Path, sf.Name)
+		} else {
+			if sf.Size != local.Size && sf.Mtime-local.Mtime > 3 && sf.Name != "" {
+				idle = false
+				sendUpdate(channel, sf.Path, sf.Name)
+			}
 		}
 	}
 	// 客户端有云端没有
 	for _, cf := range files {
-		if cf.Path == "." || cf.Path == "/" {
+		if cf.Path == "." || cf.Path == "/" || cf.Name == ".DS_Store" {
 			continue
 		}
 		exist := false
@@ -127,8 +132,21 @@ func handleTree(channel *webrtc.DataChannel, data string) {
 			}
 		}
 		if !exist {
+			idle = false
 			sendDelete(channel, cf.Path, cf.Name)
 		}
+	}
+
+	if idle {
+		msgBytes, _ := json.Marshal(SyncMessage{
+			Type:    "text",
+			Operate: "tree-none",
+			Path:    ".",
+			Name:    "",
+			Data:    "",
+		})
+		channel.SendText(string(msgBytes))
+		log.Println("[Vault] no work")
 	}
 }
 
@@ -148,10 +166,17 @@ func handleCheck(channel *webrtc.DataChannel, msg SyncMessage) {
 		return
 	}
 
-	log.Printf("%v ~ %v", clientDate, serverDate)
 	// 比对时间, 如果客户端新则发送服务端.synclog中的时间, 如果服务端新则直接发送服务端文件给客户端
 	if clientDate-serverDate <= 3 && clientDate-serverDate >= -3 {
 		log.Println("无需同步")
+		msgBytes, _ := json.Marshal(SyncMessage{
+			Type:    "text",
+			Operate: "tree-none",
+			Path:    ".",
+			Name:    "",
+			Data:    "",
+		})
+		channel.SendText(string(msgBytes))
 	} else if clientDate < serverDate {
 		log.Println("服务端新, 要求客户端发来文件树, 服务端比对后返回变更操作")
 		// 如果客户端的时间戳较新，则发送服务端发送文件树
@@ -214,6 +239,8 @@ func sendCreate(channel *webrtc.DataChannel, path, name string) {
 	}
 	msgBytes, _ := json.Marshal(msg)
 	channel.SendText(string(msgBytes))
+	ticker := time.After(1 * time.Second)
+	<-ticker
 	sendUpdate(channel, path, name)
 }
 
