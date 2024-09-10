@@ -7,13 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"syscall"
 )
 
 type FileInfo struct {
 	Name  string `json:"name"`
 	Path  string `json:"path"`
-	Ctime int64  `json:"ctime"`
 	Mtime int64  `json:"mtime"`
 	Size  int64  `json:"size"`
 }
@@ -46,7 +44,6 @@ func ScanDirectory(vaultPath string) ([]FileInfo, error) {
 		files = append(files, FileInfo{
 			Name:  name,
 			Path:  relativePath,
-			Ctime: info.Sys().(*syscall.Stat_t).Ctimespec.Nsec,
 			Mtime: info.ModTime().Unix(),
 			Size:  info.Size(),
 		})

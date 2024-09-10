@@ -221,7 +221,6 @@ export class PeerManager {
           tree.push({
             name: item.name,
             path: item.path,
-            ctime: Math.floor(item.stat.ctime / 1000),
             mtime: Math.floor(item.stat.mtime / 1000),
             size: item.stat.size
           })
@@ -229,7 +228,6 @@ export class PeerManager {
           tree.push({
             name: null,
             path: item.path,
-            ctime: null,
             mtime: null,
             size: null
           })
