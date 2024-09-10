@@ -257,7 +257,7 @@ func (s *P2PServer) setP2PInfo(data webrtc.SessionDescription) {
 			log.Printf("[P2P] data channel error: %s", err.Error())
 		})
 		channel.OnMessage(func(msg webrtc.DataChannelMessage) {
-			log.Printf("[Channel] received message: %s", string(msg.Data))
+			VaultOperate(msg.Data)
 		})
 	})
 }
