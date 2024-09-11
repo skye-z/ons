@@ -18,17 +18,17 @@ hero:
 
 features:
   - icon: 💰
-    title: 成本少
+    title: 零成本
     details: 采用 P2P 技术实现 Obsidian 客户端与 NAS 端的点对点传输, 仅自行部署云端中控服务器存在成本
   - icon: 🚀
     title: 传输快
     details: 当通过中控服务器建立连接后, 点对点传输将得同步服务无需再进行中转, 可以最大化利用你的带宽
-  - icon: ⚡️
-    title: 开销低
-    details: 闲置时仅 ~3% CPU 和 ~20MB 内存开销, 在传输 100MB 文件时也仅 3 ~ 8% CPU 和 ~50MB 的内存开销
   - icon: 🧠
     title: 易上手
     details: 提供简单易用的可视化界面, 大幅精简必要的操作步骤, 以及完善的使用文档, 都可以帮助你快速上手
+  - icon: ⚡️
+    title: 开销低
+    details: 闲置时仅 ~3% CPU 和 ~20MB 内存开销, 在传输 100MB 文件时也仅 3 ~ 8% CPU 和 ~50MB 的内存开销
 ---
 
 <style>
