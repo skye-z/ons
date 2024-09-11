@@ -20,8 +20,8 @@ const vaultPath = "./vault"
 const blockSize = 40 * 1024
 
 var (
-	fileChunks map[string]map[int]string // 存储文件名和对应的分块数据
-	fileMutex  sync.Mutex                // 保护文件分块数据的互斥锁
+	fileChunks map[string]map[int]string = make(map[string]map[int]string) // 存储文件名和对应的分块数据
+	fileMutex  sync.Mutex                                                  // 保护文件分块数据的互斥锁
 )
 
 type SyncMessage struct {
@@ -162,8 +162,8 @@ func handleCheck(channel *webrtc.DataChannel, msg SyncMessage) {
 	// 读取服务端.synclog中的时间
 	serverDate := getSyncCheckTime()
 	if serverDate == 0 {
-		log.Printf("[Vault] error getting server sync check time: %v", err)
-		return
+		log.Printf("[Vault] first sync")
+		serverDate = -99
 	}
 
 	// 比对时间, 如果客户端新则发送服务端.synclog中的时间, 如果服务端新则直接发送服务端文件给客户端
@@ -275,6 +275,9 @@ func sendDelete(channel *webrtc.DataChannel, path, name string) {
 // 处理更新任务
 func handleUpdate(msg SyncMessage) {
 	msg.Path = filepath.Join(vaultPath, msg.Path)
+	if msg.Type == "directory" {
+		return
+	}
 	handleChunkedDataIfBinary(msg)
 }
 

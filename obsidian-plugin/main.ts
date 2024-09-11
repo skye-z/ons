@@ -66,19 +66,19 @@ export default class NSPlugin extends Plugin {
 		const { vault } = this.app;
 		vault.on('create', (file) => {
 			if (this.peerManager != null && !this.isSyncing)
-				this.peerManager.sendOperate(this, 'create', file, undefined)
+				this.peerManager.sendOperate(this, 'create', file, undefined, false)
 		})
 		vault.on('delete', (file) => {
 			if (this.peerManager != null && !this.isSyncing)
-				this.peerManager.sendOperate(this, 'delete', file, undefined)
+				this.peerManager.sendOperate(this, 'delete', file, undefined, false)
 		})
 		vault.on('modify', (file) => {
 			if (this.peerManager != null && !this.isSyncing)
-				this.peerManager.sendOperate(this, 'update', file, undefined)
+				this.peerManager.sendOperate(this, 'update', file, undefined, false)
 		})
 		vault.on('rename', (file, old) => {
 			if (this.peerManager != null && !this.isSyncing)
-				this.peerManager.sendOperate(this, 'rename', file, old)
+				this.peerManager.sendOperate(this, 'rename', file, old, false)
 		})
 	}
 	syncWork(type: string, name: string, path: string) {

@@ -108,7 +108,7 @@ export class PeerManager {
       };
       dataChannel.onmessage = (event) => {
         let msg: SyncMessage = JSON.parse(event.data)
-        // console.log('收到数据:', msg);
+        console.log('收到数据:', msg);
 
         if (msg.operate === 'tree') this.handleTree(app, vault, msg)
         else if (msg.operate === 'tree-none') {
@@ -244,7 +244,6 @@ export class PeerManager {
       return false
     }
     let data = JSON.parse(msg.data)
-
     // 本地有云端没有
     for (let i in list) {
       let cloud;
@@ -260,13 +259,13 @@ export class PeerManager {
       }
       if (!exist) {
         // 新建文件
-        this.sendOperate(app, "create", item, undefined)
+        this.sendOperate(app, "create", item, undefined, true)
         // 间隔一段时间后发送文件内容
         setTimeout(() => {
-          this.sendOperate(app, "update", item, undefined)
+          this.sendOperate(app, "update", item, undefined, true)
         }, 2000);
       } else if (item instanceof TFile && item.stat.size !== cloud.size && item.stat.mtime - cloud.mtime > 3) {
-        this.sendOperate(app, "update", item, undefined)
+        this.sendOperate(app, "update", item, undefined, true)
       }
     }
     // 云端有本地没有
@@ -457,8 +456,8 @@ export class PeerManager {
     }
   }
 
-  sendOperate(app: NSPlugin, operate: 'create' | 'delete' | 'update' | 'rename', file: TFile | TFolder | TAbstractFile, old: string | undefined) {
-    if (this.isSync) return false
+  sendOperate(app: NSPlugin, operate: 'create' | 'delete' | 'update' | 'rename', file: TFile | TFolder | TAbstractFile, old: string | undefined, force: boolean) {
+    if (this.isSync && !force) return false
     const blockSize = 40 * 1024;
     // 发送文本消息
     let msg: SyncMessage = {

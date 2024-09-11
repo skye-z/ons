@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 type FileInfo struct {
@@ -52,6 +53,10 @@ func ScanDirectory(vaultPath string) ([]FileInfo, error) {
 	})
 
 	if err != nil {
+		if strings.HasSuffix(err.Error(), "no such file or directory") {
+			os.MkdirAll(vaultPath, 0755)
+			return make([]FileInfo, 0), nil
+		}
 		return nil, err
 	}
 
