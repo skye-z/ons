@@ -2,7 +2,7 @@
 
 请点击打开[中控服务](https://ons.betax.dev)
 
-![c1](../img/c1.png)
+![c1](../public/img/c1.png)
 
 然后如上图所示, 点击右上角的“Github 登录”按钮
 
