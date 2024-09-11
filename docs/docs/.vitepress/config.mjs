@@ -4,7 +4,7 @@ export default defineConfig({
   base: "/ons/",
   title: "BetaX ONS",
   description: "BetaX Obsidian NAS Sync Server",
-  head: [['link', { rel: 'icon', href: '/icon/icon-light@1x.png' }]],
+  head: [['link', { rel: 'icon', href: '/ons/icon/icon-light@1x.png' }]],
   themeConfig: {
     logo: '/icon/icon-light@2x.png',
     nav: [
