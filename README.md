@@ -8,6 +8,8 @@ This is an `Obsidian Vault` synchronization service that allows you to synchroni
 
 For users who have a NAS at home and use it as a storage hub.
 
+If you simply want to synchronize multiple `Vaults` between multiple `Obsidians`, use the official [synchronization](https://obsidian.md/sync) service.
+
 ## Prerequisites
 
 1. a NAS with [Nas Server](nas-server) installed
