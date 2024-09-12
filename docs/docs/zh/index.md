@@ -6,7 +6,8 @@ hero:
   text: "Obsidian\nNAS Sync Server"
   tagline: 让 Obsidian 与你家中内网的 NAS 时刻保持同步
   image:
-    src: /icon/icon-dark@4x.png
+    light: /icon/icon-dark@4x.png
+    dark: /icon/icon-dark@4x.png
     alt: VitePress
   actions:
     - theme: brand

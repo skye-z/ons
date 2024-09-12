@@ -2,7 +2,7 @@
 
 在 Obsidian 中`BetaX NAS Sync`插件有如下配置
 
-![o1](../public/img/o1.png)
+![o1](/img/o1.png)
 
 * 中控服务器: 如果你有自行部署中控服务, 可以修改
 * 唯一标识: 即中控分配的`NAT.ID`
@@ -12,6 +12,6 @@
 
 ## 快捷键
 
-![o2](../public/img/o2.png)
+![o2](/img/o2.png)
 
 除此之外, 你还可以设置插件两个核心功能的快捷键
