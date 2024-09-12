@@ -1,6 +1,8 @@
 # BetaX Obsidian NAS Sync
 
-[中文](README_zh.md)
+[![License](https://img.shields.io/badge/License-AGPLv3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0.html)
+
+[中文](README_zh.md) | [Docs](https://skye-z.github.io/ons/)
 
 This is an `Obsidian Vault` synchronization service that allows you to synchronize your `Obsidian` library with your home intranet NAS.
 
