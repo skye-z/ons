@@ -9,7 +9,8 @@ For users who have a NAS at home and use it as a storage hub.
 ## Prerequisites
 
 1. a NAS with [Nas Server](nas-server) installed
-2. a recent version of the `Obsidian` client.
+2. a recent version of the `Obsidian` client
+3. a Github account
 
 ## Instructions for use
 

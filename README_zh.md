@@ -10,6 +10,7 @@
 
 1. 一台安装了 [Nas Server](nas-server) 的 NAS
 2. 一个最新版本的 `Obsidian` 客户端
+3. 一个 Github 账户
 
 ## 使用说明
 
