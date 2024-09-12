@@ -1,0 +1,11 @@
+FROM alpine:latest
+
+WORKDIR /app
+
+COPY cloud-server .
+
+RUN chmod +x cloud-server
+
+EXPOSE 9891
+
+CMD ["./cloud-server"]

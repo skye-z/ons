@@ -1,0 +1,11 @@
+FROM alpine:latest
+
+WORKDIR /app
+
+COPY nas-server .
+
+RUN chmod +x nas-server
+
+EXPOSE 9892
+
+CMD ["./nas-server"]
