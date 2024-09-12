@@ -110,6 +110,7 @@ func addPublicRoute(router *gin.Engine) {
 	{
 		api.GET("/setting", setting.Get)
 		api.POST("/setting/pwd", setting.SetPassword)
+		api.GET("/auto/switch", control.SwitchAutoConnect)
 		api.GET("/register", control.Register)
 		api.GET("/conn/state", control.GetStatus)
 		api.GET("/conn/open", control.Connect)

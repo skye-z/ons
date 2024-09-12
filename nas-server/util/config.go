@@ -60,11 +60,6 @@ func GetFloat64(key string) float64 {
 }
 
 func createDefault() {
-	// 安装状态
-	viper.SetDefault("basic.install", "0")
-	// SSL配置
-	viper.SetDefault("basic.sslCert", "")
-	viper.SetDefault("basic.sslKey", "")
 	// 是否开放注册
 	viper.SetDefault("connect.auto", "false")
 	viper.SetDefault("connect.server", "ons.betax.dev")

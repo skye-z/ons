@@ -38,7 +38,6 @@ func (ss SettingServer) Get(ctx *gin.Context) {
 }
 
 func (ss SettingServer) SetPassword(ctx *gin.Context) {
-	pwd := ctx.PostForm("password")
-	util.Set("connect.password", pwd)
+	util.Set("connect.password", util.GenerateRandomString(8))
 	util.ReturnMessage(ctx, true, "密码已更新")
 }

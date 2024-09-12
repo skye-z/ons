@@ -25,12 +25,13 @@ function get(url) {
 
 export const setting = {
     all: () => get('/setting'),
-    setPassword: password => post('/setting/pwd', { password }),
+    setPassword: () => post('/setting/pwd'),
 }
 
 export const device = {
     register: () => get('/register'),
     getState: () => get('/conn/state'),
     openServer: () => get('/conn/open'),
-    closeServer: () => get('/conn/close')
+    closeServer: () => get('/conn/close'),
+    switchAuto: () => get('/auto/switch'),
 }

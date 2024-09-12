@@ -12,9 +12,12 @@
     <n-scrollbar style="height: 100vh">
       <div id="app-center">
         <head-bar />
-        <div class="app-content flex justify-center">
-          <info-card ref="infoCard" />
-          <control-card />
+        <div class="app-content">
+          <div class="flex justify-center">
+            <info-card ref="infoCard" />
+            <control-card />
+          </div>
+          <div class="text-center mt-10 text-gray">警告: 本服务可视化控制面板不受密码保护, 切勿暴露到公网</div>
         </div>
         <foot-bar />
       </div>
@@ -26,7 +29,6 @@
 import { zhCN, dateZhCN, darkTheme, lightTheme } from 'naive-ui'
 import GlobalApi from './components/globalApi.vue'
 import { useThemeStore } from './plugins/store'
-import theme from './theme.json'
 
 export default {
   name: "App",

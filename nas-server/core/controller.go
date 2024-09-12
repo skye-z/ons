@@ -89,6 +89,11 @@ func (c *Controller) Connect(ctx *gin.Context) {
 	util.ReturnMessage(ctx, true, "开始连接")
 }
 
+func (c *Controller) SwitchAutoConnect(ctx *gin.Context) {
+	util.Set("connect.auto", !util.GetBool("connect.auto"))
+	util.ReturnMessage(ctx, true, "切换成功")
+}
+
 func (c *Controller) open() {
 	if c.Server != nil {
 		c.Server.connect = nil
