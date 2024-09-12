@@ -8,7 +8,14 @@
         <template v-else-if="state == 1 && list.length > 0">
             <div class="card pa-10 flex align-center justify-between mb-10" v-for="item in list">
                 <div>
-                    <div class="nas-name">{{ item.name }}</div>
+                    <div class="nas-name flex align-center">
+                        <div>{{ item.name }}</div>
+                        <div class="remove-btn ml-5" @click="remove(item)">
+                            <n-icon>
+                                <Delete20Filled />
+                            </n-icon>
+                        </div>
+                    </div>
                     <div class="nas-id">NAT.ID {{ item.natId }}</div>
                 </div>
                 <div>
@@ -52,10 +59,12 @@
 </template>
 
 <script>
+import { Delete20Filled } from '@vicons/fluent'
 import { device } from '../plugins/api'
 
 export default {
     name: "List",
+    components: { Delete20Filled },
     data: () => ({
         state: 0,
         list: [],
@@ -73,7 +82,7 @@ export default {
             device.getList().then(res => {
                 this.state = res.state ? 1 : 2
                 if (res.state) {
-                    this.list = res.data == null ? []:res.data
+                    this.list = res.data == null ? [] : res.data
                     if (this.list.length > 0) this.checkState()
                 }
             }).catch(err => {
@@ -89,7 +98,26 @@ export default {
             }).catch(() => {
                 window.$message.warning("更新设备状态出错");
             })
-        }
+        },
+        remove(item) {
+            window.$dialog.warning({
+                title: "操作确认",
+                content: "删除“" + item.name + "”后, 当前已经建立的连接不受影响, 后续连接将无法通过当前 NAT.ID " + item.natId + " 进行, 确认要继续吗?",
+                positiveText: "确认删除",
+                negativeText: "取消",
+                onPositiveClick: () => {
+                    device.remove(item.id).then(res => {
+                        if (res.state) {
+                            this.init()
+                            window.$message.success("删除成功");
+                        } else window.$message.warning(res.message ? res.message : "删除失败");
+                    }).catch(() => {
+                        window.$message.error("发生意料之外的错误");
+                    })
+                },
+            });
+        },
+
     },
     mounted() {
         this.init()
@@ -124,5 +152,16 @@ export default {
 
 .dot.dot-green {
     background-color: #008000;
+}
+
+.remove-btn{
+    line-height: 18px;
+    color: #e06a6a;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.remove-btn:hover{
+    color: #b34646;
 }
 </style>

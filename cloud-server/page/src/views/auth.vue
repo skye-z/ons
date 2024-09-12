@@ -23,7 +23,7 @@ export default {
             if (query.state == 9) {
                 localStorage.setItem('access:token', query.code)
                 setTimeout(() => {
-                    this.$router.push('/')
+                    this.$router.push('/list')
                 }, 1500);
             }
         },
@@ -41,7 +41,7 @@ export default {
             else if (this.state == 2) return '无法解析回调数据, 请检查 OAuth2 授权配置'
             else if (this.state == 3) return '当前授权的 Github 账户与系统绑定账户不一致'
             else if (this.state == 4) return '生成令牌时发生错误, 请检查密钥配置是否正确'
-            else if (this.state == 9) return '欢迎回来, 正在跳转控制台...'
+            else if (this.state == 9) return '欢迎回来, 正在跳转...'
         },
         back() {
             this.$router.push('/')
