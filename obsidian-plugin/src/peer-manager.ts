@@ -85,7 +85,7 @@ export class PeerManager {
       }
     };
     this.p2pCon.oniceconnectionstatechange = () => {
-      console.log('连接状态更新:', this.p2pCon.iceConnectionState);
+      // console.log('连接状态更新:', this.p2pCon.iceConnectionState);
       if (this.p2pCon.iceConnectionState === 'disconnected') {
         new Notice("⛓️‍💥 NAS 连接已断开");
         app.status.setText('🟡 NAS 已断开');
@@ -108,7 +108,7 @@ export class PeerManager {
       };
       dataChannel.onmessage = (event) => {
         let msg: SyncMessage = JSON.parse(event.data)
-        console.log('收到数据:', msg);
+        // console.log('收到数据:', msg);
 
         if (msg.operate === 'tree') this.handleTree(app, vault, msg)
         else if (msg.operate === 'tree-none') {
@@ -164,7 +164,6 @@ export class PeerManager {
     let path = msg.path === '.' ? (msg.name) : (msg.path + '/' + msg.name)
     if (path == undefined) return
     let file = vault.getAbstractFileByPath(path)
-    console.log(path, file)
     if (file == null) return
     if (msg.type === 'text') {
       if (file instanceof TFile) {
@@ -426,7 +425,7 @@ export class PeerManager {
       new Notice("⚠️ 未连接到 NAS, 请重新连接后再试");
       return false
     }
-    console.log('已请求文件同步');
+    // console.log('已请求文件同步');
     let msg: SyncMessage = {
       path: './',
       name: '.synclog',
@@ -441,9 +440,7 @@ export class PeerManager {
     let logPath = "/.synclog";
     var checkFile = vault.getFileByPath(logPath)
     if (checkFile == null) {
-      vault.create(".synclog", '0').then(res => {
-        console.log(res)
-      })
+      vault.create(".synclog", '0')
       return 0
     } else return parseInt(await vault.cachedRead(checkFile))
   }
@@ -451,7 +448,6 @@ export class PeerManager {
   setSyncCheckTime(vault: Vault, time: number) {
     let logPath = "/.synclog";
     var checkFile = vault.getFileByPath(logPath)
-    console.log(checkFile)
     if (checkFile == null) {
       vault.create(".synclog", time + '')
     } else {

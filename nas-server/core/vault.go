@@ -178,7 +178,6 @@ func handleCheck(channel *webrtc.DataChannel, msg SyncMessage) {
 		})
 		channel.SendText(string(msgBytes))
 	} else if clientDate < serverDate {
-		log.Println("服务端新, 要求客户端发来文件树, 服务端比对后返回变更操作")
 		// 如果客户端的时间戳较新，则发送服务端发送文件树
 		msgBytes, _ := json.Marshal(SyncMessage{
 			Type:    "text",
@@ -189,7 +188,6 @@ func handleCheck(channel *webrtc.DataChannel, msg SyncMessage) {
 		})
 		channel.SendText(string(msgBytes))
 	} else {
-		log.Println("客户端新, 服务器主动发送文件树, 客户端比对后发回变更操作")
 		scan, err := util.ScanDirectory(vaultPath)
 		if err != nil {
 			log.Printf("[Vault] scan directory error: %v", err)
