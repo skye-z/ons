@@ -1,10 +1,26 @@
 # 自行部署
 
-## Docker 容器部署
+## 部署
+
+### Docker 容器部署
 
 1. 拉取`skyezhang/ons-server`
 2. 开放`80`和`443`端口
 3. 启动容器
+
+### Linux 部署
+
+```shell
+bash -c "$(curl -fsSL https://betax.dev/sc/ons.sh)"
+```
+
+#### 控制
+
+```shell
+systemctl status ons-server
+systemctl start ons-server
+systemctl stop ons-server
+```
 
 ## 初始化设置
 

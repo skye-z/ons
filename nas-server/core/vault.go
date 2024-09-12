@@ -98,7 +98,7 @@ func handleTree(channel *webrtc.DataChannel, data string) {
 	}
 	// 云端有客户端没有
 	for _, sf := range serverFiles {
-		if sf.Path == "." || sf.Path == "/" || sf.Name == ".DS_Store" {
+		if sf.Path == "." || sf.Path == "/" || strings.HasPrefix(sf.Path, ".obsidian") || sf.Name == ".DS_Store" {
 			continue
 		}
 		var local util.FileInfo
@@ -122,7 +122,7 @@ func handleTree(channel *webrtc.DataChannel, data string) {
 	}
 	// 客户端有云端没有
 	for _, cf := range files {
-		if cf.Path == "." || cf.Path == "/" || cf.Name == ".DS_Store" {
+		if cf.Path == "." || cf.Path == "/" || strings.HasPrefix(cf.Path, ".obsidian") || cf.Name == ".DS_Store" {
 			continue
 		}
 		exist := false

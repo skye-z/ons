@@ -59,6 +59,8 @@ func (s *P2PServer) handleMessages() {
 		_, msgBytes, err := s.connect.ReadMessage()
 		if err != nil {
 			log.Println("[P2P] read:", err)
+			s.connect.Close()
+			s.p2p.Close()
 			return
 		}
 		var msg Message
