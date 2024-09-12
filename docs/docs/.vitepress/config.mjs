@@ -8,16 +8,15 @@ export default defineConfig({
     root: {
       label: 'English',
       lang: 'en',
-      link: '/en',
       themeConfig: {
         logo: '/icon/icon-light@2x.png',
         nav: [
-          { text: 'Guide', link: '/en/guide/about' },
-          { text: 'Plugin', link: '/en/obsidian/setting' },
+          { text: 'Guide', link: '/guide/about' },
+          { text: 'Plugin', link: '/obsidian/setting' },
           {
             text: 'Service', items: [
-              { text: 'NAS Service', link: '/en/nas/register' },
-              { text: 'Centr Control Server', link: '/en/cloud/register' }
+              { text: 'NAS Service', link: '/nas/register' },
+              { text: 'Centr Control Server', link: '/cloud/register' }
             ]
           },
         ],
@@ -25,33 +24,33 @@ export default defineConfig({
           {
             text: 'Guide',
             items: [
-              { text: 'About ONS', link: '/en/guide/about' },
-              { text: 'Quick Start', link: '/en/guide/start' },
-              { text: 'Compatibility', link: '/en/guide/compatible' },
-              { text: 'Initialization', link: '/en/guide/reinit' }
+              { text: 'About ONS', link: '/guide/about' },
+              { text: 'Quick Start', link: '/guide/start' },
+              { text: 'Compatibility', link: '/guide/compatible' },
+              { text: 'Initialization', link: '/guide/reinit' }
             ]
           },
           {
             text: 'Obsidian',
             items: [
-              { text: 'Basic Config', link: '/en/obsidian/setting' },
-              { text: 'Common Problem', link: '/en/obsidian/problem' },
+              { text: 'Basic Config', link: '/obsidian/setting' },
+              { text: 'Common Problem', link: '/obsidian/problem' },
             ]
           },
           {
             text: 'NAS Service',
             items: [
-              { text: 'Register Device', link: '/en/nas/register' },
-              { text: 'Sync Control', link: '/en/nas/connect' },
-              { text: 'Connection Password', link: '/en/nas/pass' },
+              { text: 'Register Device', link: '/nas/register' },
+              { text: 'Sync Control', link: '/nas/connect' },
+              { text: 'Connection Password', link: '/nas/pass' },
             ]
           },
           {
             text: 'Centr Control Server',
             items: [
-              { text: 'Register & Login', link: '/en/cloud/register' },
-              { text: 'Device Management', link: '/en/cloud/device' },
-              { text: 'Self Deployment', link: '/en/cloud/deploy' },
+              { text: 'Register & Login', link: '/cloud/register' },
+              { text: 'Device Management', link: '/cloud/device' },
+              { text: 'Self Deployment', link: '/cloud/deploy' },
             ]
           }
         ]
