@@ -1,0 +1,11 @@
+{
+	"id": "ons",
+	"name": "BetaX NAS Sync",
+	"version": "1.0.0",
+	"minAppVersion": "1.6.7",
+	"description": "Keep Vault synchronized with the NAS on your home intranet.",
+	"author": "Skye",
+	"authorUrl": "https://github.com/skye-z",
+	"fundingUrl": "https://github.com/skye-z/ons",
+	"isDesktopOnly": false
+}
