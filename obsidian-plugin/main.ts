@@ -82,7 +82,7 @@ export default class NSPlugin extends Plugin {
 		})
 	}
 	syncWork(type: string, name: string, path: string) {
-		var stat = this.app.vault.getAbstractFileByPath(path)
+		let stat = this.app.vault.getAbstractFileByPath(path)
 		if (stat instanceof TFile) {
 			stat.vault.cachedRead(stat).then(res => {
 				console.log('file', type, name, path, stat, res)

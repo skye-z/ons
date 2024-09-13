@@ -140,8 +140,11 @@ export class PeerManager {
     }
   }
 
-  private handleCreate(app: NSPlugin, vault: Vault, msg: SyncMessage) {
+  private async handleCreate(app: NSPlugin, vault: Vault, msg: SyncMessage) {
     this.isSync = true;
+    if (msg.path === undefined) return
+    if ((msg.path === '.' || msg.path === '/' || msg.path.startsWith('.')) && msg.name === '') return
+    if (vault.getFolderByPath(msg.path) == null) await vault.createFolder(msg.path);
     vault.create(msg.path + '/' + msg.name, "")
     this.updateSyncTime(app)
     this.syncOver();
@@ -149,12 +152,13 @@ export class PeerManager {
 
   private handleDelete(app: NSPlugin, vault: Vault, msg: SyncMessage) {
     this.isSync = true;
-    if (msg.name === '') return
-    let path = msg.path === '.' ? (msg.name) : (msg.path + '/' + msg.name)
+    let path
+    if (msg.name === '') path = msg.path
+    else path = msg.path === '.' ? (msg.name) : (msg.path + '/' + msg.name)
     if (path == undefined) return
     let file = vault.getAbstractFileByPath(path)
     if (file == null) return
-    vault.delete(file, true)
+    app.app.fileManager.trashFile(file)
     this.updateSyncTime(app)
     this.syncOver();
   }
@@ -250,7 +254,7 @@ export class PeerManager {
     for (let i in list) {
       let cloud;
       let item = list[i]
-      if (item.path === '.' || item.path === '/' || item.path.startsWith('.obsidian')) continue;
+      if (item.path === '.' || item.path === '/' || item.path.startsWith('.')) continue;
       let exist = false
       for (let x in data) {
         if (item.path === data[x].path) {
@@ -272,7 +276,7 @@ export class PeerManager {
     }
     // 云端有本地没有
     for (let x in data) {
-      if (data[x].path === '.' || data[x].path === '/' || data[x].path.startsWith('.obsidian')) continue;
+      if (data[x].path === '.' || data[x].path === '/' || data[x].path.startsWith('.')) continue;
       let exist = false
       for (let i in list) {
         if (list[i].path === data[x].path) {
@@ -438,7 +442,7 @@ export class PeerManager {
 
   async getSyncCheckTime(vault: Vault) {
     let logPath = "/.synclog";
-    var checkFile = vault.getFileByPath(logPath)
+    let checkFile = vault.getFileByPath(logPath)
     if (checkFile == null) {
       vault.create(".synclog", '0')
       return 0
@@ -447,7 +451,7 @@ export class PeerManager {
 
   setSyncCheckTime(vault: Vault, time: number) {
     let logPath = "/.synclog";
-    var checkFile = vault.getFileByPath(logPath)
+    let checkFile = vault.getFileByPath(logPath)
     if (checkFile == null) {
       vault.create(".synclog", time + '')
     } else {
