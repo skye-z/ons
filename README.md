@@ -8,7 +8,7 @@ This is an `Obsidian Vault` synchronization service that allows you to synchroni
 
 For users who have a NAS at home and use it as a storage hub.
 
-If you simply want to synchronize multiple `Vaults` between multiple `Obsidians`, use the official [synchronization](https://obsidian.md/sync) service.
+> If you simply want to synchronize multiple `Vaults` between multiple `Obsidians`, use the official [synchronization](https://obsidian.md/sync) service.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ If you simply want to synchronize multiple `Vaults` between multiple `Obsidians`
 
 ## Instructions for use
 
-1. You need to register your NAS with the central server to get the `NAT.ID`. 2.
+1. You need to register your NAS with the central server to get the `NAT.ID`.
 2. Enable the connection password on the `NAS Server` (it is better to enable it for security reasons)
 3. Install and enable the plugin
 4. Fill in the `唯一标识` and `连接密码` in the Settings.

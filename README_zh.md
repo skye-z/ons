@@ -8,7 +8,7 @@
 
 适用于家中有一台 NAS, 并且将其作为存储中枢的用户
 
-如果你只是想简单的将多个 `Obsidian` 之间的多个 `Vault` 同步, 请使用官方的[同步](https://obsidian.md/sync)服务
+> 如果你只是想简单的将多个 `Obsidian` 之间的多个 `Vault` 同步, 请使用官方的[同步](https://obsidian.md/sync)服务
 
 ## 前提条件
 
