@@ -26,8 +26,8 @@ export default defineConfig({
             items: [
               { text: 'About ONS', link: '/guide/about' },
               { text: 'Quick Start', link: '/guide/start' },
-              { text: 'Compatibility', link: '/guide/compatible' },
-              { text: 'Initialization', link: '/guide/reinit' }
+              { text: 'Initialization', link: '/guide/reinit' },
+              { text: 'Compatibility', link: '/guide/compatible' }
             ]
           },
           {
@@ -78,8 +78,8 @@ export default defineConfig({
             items: [
               { text: '关于 ONS', link: '/zh/guide/about' },
               { text: '快速开始', link: '/zh/guide/start' },
-              { text: '兼容性', link: '/zh/guide/compatible' },
-              { text: '初始化', link: '/zh/guide/reinit' }
+              { text: '初始化', link: '/zh/guide/reinit' },
+              { text: '兼容性', link: '/zh/guide/compatible' }
             ]
           },
           {

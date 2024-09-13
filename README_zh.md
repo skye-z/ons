@@ -24,22 +24,57 @@
 4. 在设置中填写 `唯一标识` 和 `连接密码`
 5. 点击 `开始测试` 测试是否可以正常连接
 
-### 如何同步
+## 存储库配置(重要)
 
-> 下面的信息非常重要, 请一定要认真阅读!!!!
+请根据实际情况选择对应章节进行
 
-你是否首次使用本服务
+- 我从未使用过本服务
+  - 我在 `NAS` 上存储有 `Obsidian Vault`
+    - G4 方案
+  - 我只在本地有 `Obsidian Vault`
+    - G1 方案
+- 我经使用过本服务中任意组件
+  - 我在 `NAS Server` 中已有 `Vault`
+    - G2 方案
+  - 我在本地 `Obsidian` 中已有同步过的 `Vault`
+    - G3 方案
 
-- 是, 我从未使用过 `BetaX Obsidian NAS Sync` 的任何服务
-  - 首先请确保 `NAS Server` 中不存在 `Vault`, 否则可能导致数据被覆盖, 检查完成后建立连接, 连接成功即可开始使用啦
-- 否, 我使用过 `NAS Server` 或本插件
-  - 我要将 `NAS Server` 中的 `Vault`拉取到本地
-    - 首先请确保本地 `Obsidian Vault` 是一个全新的 `Vault`, 然后建立连接, 打开命令面板选择`BetaX NAS Sync: 手动更新`即可
-  - 我要将本地的 `Vault` 推送到 `NAS Server`
-    - 推送到新的 `NAS Server`
-      - 首先请确保 `NAS Server` 中不存在 `Vault`, 然后建立连接, 打开命令面板选择`BetaX NAS Sync: 手动更新`即可
-    - 推送到旧的 `NAS Server`
-      - 这是一个危险操作, 必须保证两端的 `Vault` 一致才能继续使用, 如果强行使用, 会使得本地 `Obsidian Vault` 被覆盖
+### G1 方案
+
+你无需额外操作, 按照前面的步骤完成连接后正常使用即可
+
+### G2 方案
+
+由于你已有 `NAS Vault` 所以你需要先确认
+
+- 本地 `Obsidian` 是一个全新的 `Vault`
+- 本地 `Obsidian Vault` 中的文件与数据允许被覆盖
+
+> Q: 如果我有一个本地 `Obsidian Vault` 而且数据重要不能覆盖怎么办呢? <br/> A: 请创建一个新的 `Obsidian Vault`
+
+确认无误后按照前面的步骤完成连接, 连接成功后在 `Obsidian` 中打开命令面板选择`BetaX NAS Sync: 手动更新`即可
+
+### G3 方案
+
+现在你已有本地 `Obsidian Vault`, 如果你没有 `NAS Vault`, 那么你可以跳转到[G1 方案](#G1 方案)来将数据推送到新的 `NAS Server` 中
+
+如果你有包含 `Vault` 数据的 `NAS Server` , 那就要判断此本地 `Vault` 和 `NAS Vault` 是否一致, 如果一致, 那么你可以跳转到[G1 方案](#G1 方案), 二者根据时间先后同步差异即可
+
+如果不一致, 那么你需要清除无需保留的那一端, 最好是整个文件夹删除后重新创建
+
+清除完成后按照前面的步骤完成连接, 连接成功后在 `Obsidian` 中打开命令面板选择`BetaX NAS Sync: 手动更新`即可
+
+### G4 方案
+
+看来你曾经使用 `NAS` 简单的文件共享存储过 `Obsidian Vault`
+
+你需要先部署完成 `NAS Server` 后, 将你 `NAS` 上的 `Obsidian Vault` 映射到容器的 `/app/vault` 目录
+
+然后在 `Obsidian Vault` 目录中创建 `.synclog` 文件, 文件没有任何后缀
+
+创建文件后用记事本或其他编辑器打开它, 在里面输入以秒为单位的10位时间戳数字, 最后保存修改
+
+上述完成后按照最前面的步骤完成连接, 连接成功后在 `Obsidian` 中打开命令面板选择`BetaX NAS Sync: 手动更新`即可自动拉取 `NAS` 上的 `Obsidian Vault` 到本地
 
 ## 无法连接
 
