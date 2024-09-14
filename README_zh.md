@@ -4,7 +4,7 @@
 
 [English](README.md) | [详细文档](https://skye-z.github.io/ons/)
 
-这是一个`Obsidian Vault`同步服务, 它能让你的`Obsidian`库与家中内网的 NAS 进行同步
+这是一个`Obsidian Vault`同步服务, 它能让你的`Obsidian Vault`与家中内网的 NAS 进行同步
 
 适用于家中有一台 NAS, 并且将其作为存储中枢的用户
 

@@ -4,7 +4,7 @@
 
 [中文](README_zh.md) | [Docs](https://skye-z.github.io/ons/)
 
-This is an `Obsidian Vault` synchronization service that allows you to synchronize your `Obsidian` library with your home intranet NAS.
+This is an `Obsidian Vault` synchronization service that allows you to synchronize your `Obsidian Vault` with your home intranet NAS.
 
 For users who have a NAS at home and use it as a storage hub.
 
