@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile, TFolder, Vault } from 'obsidian';
+import { Notice, Plugin, TFile, Workspace } from 'obsidian';
 import { NSPluginSettings, NSDefaultSettings } from './src/model';
 import { PeerManager } from './src/peer-manager';
 import { NSSettingTab } from './src/setting';
@@ -32,7 +32,9 @@ export default class NSPlugin extends Plugin {
 		// 初始化 PeerManager
 		this.initPeerManager();
 		// 初始化监听器
-		this.initListener();
+		this.app.workspace.onLayoutReady(()=>{
+			this.initListener();
+		})
 		// 注册自动同步计时器
 		// this.registerInterval(window.setInterval(
 		// 	() => this.syncFilesAuto(), 5 * 60 * 1000

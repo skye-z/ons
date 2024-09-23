@@ -45,6 +45,26 @@ export class NSSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
+			.setName('Main stun server')
+			.setDesc('信令服务器')
+			.addText(text => text
+				.setPlaceholder('stun:domain.com:443')
+				.setValue(this.plugin.settings.stunMain)
+				.onChange(async (value) => {
+					this.plugin.settings.stunMain = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('Backup stun server')
+			.setDesc('备用信令服务器')
+			.addText(text => text
+				.setPlaceholder('stun:domain.com:443')
+				.setValue(this.plugin.settings.stunBackup)
+				.onChange(async (value) => {
+					this.plugin.settings.stunBackup = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
 			.setName('Connection test')
 			.setDesc('连接测试')
 			.addButton(text => text

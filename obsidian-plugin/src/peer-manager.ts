@@ -128,11 +128,11 @@ export class PeerManager {
       this.reConnectTimer = setTimeout(() => {
         this.reConnectNumber++
         new Notice("第"+this.reConnectNumber+"次尝试重新连接...");
+        let iceServers = [];
+        if (app.settings.stunMain != '') iceServers.push({urls:app.settings.stunMain})
+        if (app.settings.stunBackup != '') iceServers.push({urls:app.settings.stunBackup})
         this.p2pCon = new RTCPeerConnection({
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun.nextcloud.com:443' }
-          ],
+          iceServers
         });
         this.settingLocalInfo(app, app.app.vault)
         this.nsa = this.connectnsa(app);
