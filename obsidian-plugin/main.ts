@@ -18,12 +18,12 @@ export default class NSPlugin extends Plugin {
 		this.status.setText('连接中...');
 		// 添加更新命令
 		this.addCommand({
-			id: 'onsa',
+			id: 'nas-manual-update',
 			name: '手动更新',
 			callback: () => this.syncFilesManually()
 		});
 		this.addCommand({
-			id: 'onsb',
+			id: 'nas-reconnect',
 			name: '重新连接',
 			callback: () => this.initPeerManager()
 		});
