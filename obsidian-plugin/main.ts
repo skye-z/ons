@@ -84,12 +84,12 @@ export default class NSPlugin extends Plugin {
 	syncWork(type: string, name: string, path: string) {
 		let stat = this.app.vault.getAbstractFileByPath(path)
 		if (stat instanceof TFile) {
-			stat.vault.cachedRead(stat).then(res => {
-				console.log('file', type, name, path, stat, res)
-			})
-		} else if (stat instanceof TFolder) {
-			console.log('folder', type, name, path, stat)
-		}
+			stat.vault.cachedRead(stat);
+		} 
+		// ignore folder
+		// else if (stat instanceof TFolder) {
+		// 	console.log('folder', type, name, path, stat)
+		// }
 	}
 	// 执行手动同步
 	private syncFilesManually() {
@@ -111,7 +111,7 @@ export default class NSPlugin extends Plugin {
 		if (this.peerManager) {
 			new Notice('正在同步中, 请勿编辑和操作');
 			// 在这里调用同步文件的逻辑
-			console.log('文件同步准备中');
+			// console.log('文件同步准备中');
 			// 实际的同步逻辑应该在这里实现
 			this.peerManager.syncFiles(this.settings.lastSync)
 		}
