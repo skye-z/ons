@@ -6,6 +6,5 @@
 	"description": "Keep Vault synchronized with the NAS on your home intranet.",
 	"author": "Skye",
 	"authorUrl": "https://github.com/skye-z",
-	"fundingUrl": "https://github.com/skye-z/ons",
 	"isDesktopOnly": false
 }
