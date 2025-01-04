@@ -1,5 +1,6 @@
 import NSPlugin from 'main';
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
+import t from './i18n/locale';
 
 // 设置面板
 export class NSSettingTab extends PluginSettingTab {
@@ -15,8 +16,8 @@ export class NSSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Central control server')
-			.setDesc('中控服务器')
+			.setName(t("SETTING_CONTROL_SERVER"))
+			.setDesc(t("SETTING_CONTROL_SERVER_DESC"))
 			.addText(text => text
 				.setPlaceholder('ons.betax.dev')
 				.setValue(this.plugin.settings.server)
@@ -25,8 +26,8 @@ export class NSSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName('NAT.ID')
-			.setDesc('唯一标识')
+			.setName(t("SETTING_NAT_ID"))
+			.setDesc(t("SETTING_NAT_ID_DESC"))
 			.addText(text => text
 				.setPlaceholder('000000')
 				.setValue(this.plugin.settings.devId)
@@ -35,8 +36,8 @@ export class NSSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName('Connection password')
-			.setDesc('连接密码')
+			.setName(t("SETTING_PASSWORD"))
+			.setDesc(t("SETTING_PASSWORD_DESC"))
 			.addText(text => text
 				.setPlaceholder('8-24位')
 				.setValue(this.plugin.settings.pwd)
@@ -45,8 +46,8 @@ export class NSSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName('Main stun server')
-			.setDesc('信令服务器')
+			.setName(t("SETTING_MAIN_STUN"))
+			.setDesc(t("SETTING_MAIN_STUN_DESC"))
 			.addText(text => text
 				.setPlaceholder('stun:domain.com:443')
 				.setValue(this.plugin.settings.stunMain)
@@ -55,8 +56,8 @@ export class NSSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName('Backup stun server')
-			.setDesc('备用信令服务器')
+			.setName(t("SETTING_BACKUP_STUN"))
+			.setDesc(t("SETTING_BACKUP_STUN_DESC"))
 			.addText(text => text
 				.setPlaceholder('stun:domain.com:443')
 				.setValue(this.plugin.settings.stunBackup)
@@ -65,8 +66,8 @@ export class NSSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName('Connection test')
-			.setDesc('连接测试')
+			.setName(t("SETTING_TEST"))
+			.setDesc(t("SETTING_TEST_DESC"))
 			.addButton(text => text
 				.setButtonText("Start")
 				.onClick(async () => {

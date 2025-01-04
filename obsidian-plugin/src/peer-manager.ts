@@ -1,5 +1,6 @@
 import { arrayBufferToBase64, base64ToArrayBuffer, Notice, TAbstractFile, TFile, TFolder, Vault } from 'obsidian';
 import NSPlugin from 'main';
+import t from './i18n/locale';
 
 // 消息模型
 interface Message {
@@ -62,10 +63,10 @@ export class PeerManager {
   private async settingLocalInfo(app: NSPlugin, vault: Vault) {
     // 创建数据通道(必须在最前面)
     this.channel = this.p2pCon.createDataChannel('NSChanel')
-    this.channel.onclose = () => console.log('数据通道已关闭');
-    this.channel.onerror = (error) => {
-      console.error('数据通道错误:', error)
-    };
+    // this.channel.onclose = () => console.log('数据通道已关闭');
+    // this.channel.onerror = (error) => {
+    //   console.error('数据通道错误:', error)
+    // };
     // 监听网络节点变动
     this.p2pCon.onicecandidate = (event) => {
       if (event.candidate) {
@@ -87,8 +88,8 @@ export class PeerManager {
     this.p2pCon.oniceconnectionstatechange = () => {
       // console.log('连接状态更新:', this.p2pCon.iceConnectionState);
       if (this.p2pCon.iceConnectionState === 'disconnected') {
-        new Notice("⛓️‍💥 NAS 连接已断开");
-        app.status.setText('🟡 NAS 已断开');
+        new Notice("⛓️‍💥 NAS " + t("TIP_CONNECTION_DROPPED"));
+        app.status.setText('🟡 NAS ' + t("STATUS_CONNECTION_DROPPED"));
         this.reConnect(app)
       }
     };
@@ -320,8 +321,8 @@ export class PeerManager {
         this.outError(app, message.data);
       }
     };
-    nsa.onerror = (error) => { console.error('与 NSA 连接出错:', error) };
-    nsa.onclose = (event) => { console.log('与 NSA 的连接已关闭:', event) };
+    // nsa.onerror = (error) => { console.error('与 NSA 连接出错:', error) };
+    // nsa.onclose = (event) => { console.log('与 NSA 的连接已关闭:', event) };
     return nsa;
   }
 
@@ -446,7 +447,7 @@ export class PeerManager {
     if (checkFile == null) {
       vault.create(".synclog", '0')
       return 0
-    } else return parseInt(await vault.cachedRead(checkFile))
+    } else return parseInt(await vault.read(checkFile))
   }
 
   setSyncCheckTime(vault: Vault, time: number) {
