@@ -46,12 +46,16 @@ export class PeerManager {
     this.nsaPath = 'wss://' + app.settings.server + '/nat';
     this.nabId = app.settings.devId;
     this.pass = app.settings.pwd;
+    let iceList: RTCIceServer[] = [];
+    if (app.settings.stunMain) iceList.push({
+      urls: app.settings.stunMain
+    })
+    if (app.settings.stunBackup) iceList.push({
+      urls: app.settings.stunBackup
+    })
     // 创建点对点连接
     this.p2pCon = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun.nextcloud.com:443' }
-      ],
+      iceServers: iceList,
     });
     // 第一步 生成本地描述信息
     this.settingLocalInfo(app, app.app.vault)
@@ -64,9 +68,9 @@ export class PeerManager {
     // 创建数据通道(必须在最前面)
     this.channel = this.p2pCon.createDataChannel('NSChanel')
     // this.channel.onclose = () => console.log('数据通道已关闭');
-    // this.channel.onerror = (error) => {
-    //   console.error('数据通道错误:', error)
-    // };
+    this.channel.onerror = (error) => {
+      console.error('数据通道错误:', error)
+    };
     // 监听网络节点变动
     this.p2pCon.onicecandidate = (event) => {
       if (event.candidate) {
@@ -104,8 +108,8 @@ export class PeerManager {
       dataChannel.onopen = () => {
         clearTimeout(this.reConnectTimer)
         this.reConnectNumber = 0
-        app.status.setText('🟢 NAS 已连接');
-        new Notice("🚀 NAS 已连接");
+        app.status.setText('🟢 NAS ' + t("TIP_CONNECTED"));
+        new Notice("🚀 NAS " + t("TIP_CONNECTED"));
       };
       dataChannel.onmessage = (event) => {
         let msg: SyncMessage = JSON.parse(event.data)
@@ -113,7 +117,7 @@ export class PeerManager {
 
         if (msg.operate === 'tree') this.handleTree(app, vault, msg)
         else if (msg.operate === 'tree-none') {
-          new Notice("😆 同步结束, 数据已是最新");
+          new Notice("😆 " + t("TIP_SYNC_END"));
           this.syncOver();
         }
         else if (msg.operate === 'create') this.handleCreate(app, vault, msg)
@@ -123,15 +127,15 @@ export class PeerManager {
     };
   }
 
-  private reConnect(app: NSPlugin){
+  private reConnect(app: NSPlugin) {
     if (this.reConnectNumber < 3) {
       clearTimeout(this.reConnectTimer)
       this.reConnectTimer = setTimeout(() => {
         this.reConnectNumber++
-        new Notice("第"+this.reConnectNumber+"次尝试重新连接...");
+        new Notice(t("TIP_RECONNECT", '' + this.reConnectNumber));
         let iceServers = [];
-        if (app.settings.stunMain != '') iceServers.push({urls:app.settings.stunMain})
-        if (app.settings.stunBackup != '') iceServers.push({urls:app.settings.stunBackup})
+        if (app.settings.stunMain != '') iceServers.push({ urls: app.settings.stunMain })
+        if (app.settings.stunBackup != '') iceServers.push({ urls: app.settings.stunBackup })
         this.p2pCon = new RTCPeerConnection({
           iceServers
         });
@@ -145,8 +149,11 @@ export class PeerManager {
     this.isSync = true;
     if (msg.path === undefined) return
     if ((msg.path === '.' || msg.path === '/' || msg.path.startsWith('.')) && msg.name === '') return
-    if (vault.getFolderByPath(msg.path) == null) await vault.createFolder(msg.path);
-    vault.create(msg.path + '/' + msg.name, "")
+    let path = msg.path;
+    if (msg.name != undefined) path = msg.path.replace(msg.name, "");
+    if (path.endsWith('/')) path = path.substring(0, path.length - 1);
+    if (vault.getFolderByPath(path) == null) await vault.createFolder(path);
+    if (msg.type != 'directory') vault.create(path + '/' + msg.name, "")
     this.updateSyncTime(app)
     this.syncOver();
   }
@@ -165,22 +172,19 @@ export class PeerManager {
   }
 
   private handleUpdate(app: NSPlugin, vault: Vault, msg: SyncMessage) {
+    if (msg.type === 'directory') return false
     this.isSync = true;
-    let path = msg.path === '.' ? (msg.name) : (msg.path + '/' + msg.name)
-    if (path == undefined) return
-    let file = vault.getAbstractFileByPath(path)
+    let path = msg.path === '.' ? msg.name : msg.path
+    if (path === undefined) return
+    let file = vault.getFileByPath(path)
     if (file == null) return
     if (msg.type === 'text') {
-      if (file instanceof TFile) {
-        if (msg.data == null || msg.data == undefined) return;
-        const decoder = new TextDecoder("utf-8");
-        vault.modify(file, decoder.decode(new Uint8Array(Array.from(atob(msg.data), c => c.charCodeAt(0)))))
-      }
+      if (msg.data == null || msg.data == undefined) return;
+      const decoder = new TextDecoder("utf-8");
+      vault.modify(file, decoder.decode(new Uint8Array(Array.from(atob(msg.data), c => c.charCodeAt(0)))))
     } else if (msg.type === 'binary') {
-      if (file instanceof TFile) {
-        if (msg.data == null || msg.data == undefined) return;
-        this.handleBinaryChunk(vault, file, msg.data);
-      }
+      if (msg.data == null || msg.data == undefined) return;
+      this.handleBinaryChunk(vault, file, msg.data);
     }
     this.updateSyncTime(app);
     this.syncOver();
@@ -377,40 +381,40 @@ export class PeerManager {
     let msg = data
     switch (data) {
       case 'password error':
-        app.status.setText('连接密码错误');
-        msg = '连接密码错误'
+        app.status.setText(t("ERR_PASSWORD"));
+        msg = t("ERR_PASSWORD")
         break
       case 10001:
-        app.status.setText('连接失败');
-        msg = '协议无法对齐'
+        app.status.setText(t("STATUS_CONNECT"));
+        msg = t("ERR_PROTOCOL")
         break
       case 10002:
-        app.status.setText('连接失败');
-        msg = '不支持的接入类型'
+        app.status.setText(t("STATUS_CONNECT"));
+        msg = t("ERR_ADD_TYPE")
         break
       case 10003:
-        msg = '不支持的消息类型'
+        msg = t("ERR_MESSAGE_TYPE")
         break
       case 10004:
-        app.status.setText('设备不存在');
-        msg = '设备不存在'
+        app.status.setText(t("ERR_OFFLINE"));
+        msg = t("ERR_OFFLINE")
         break
       case 10005:
-        msg = '不支持的指令'
+        msg = t("ERR_COMMANDS")
         break
       case 10006:
-        msg = '未能读取到消息内容'
+        msg = t("ERR_NO_MESSAGE")
         break
       case 10007:
-        msg = '不支持的消息格式'
+        msg = t("ERR_MESSAGE_FORMAT")
         break
       case 10008:
-        app.status.setText('🔴 NAS 已离线');
-        msg = 'NAS 已离线'
+        app.status.setText('🔴 NAS ' + t("ERR_OFFLINE"));
+        msg = 'NAS ' + t("ERR_OFFLINE")
         this.reConnect(app)
         break
       default:
-        msg = '不支持的消息格式'
+        msg = t("ERR_MESSAGE_FORMAT")
         break
     }
     new Notice(msg);
@@ -427,7 +431,7 @@ export class PeerManager {
 
   syncFiles(lastSync: number) {
     if (this.channel.readyState != 'open') {
-      new Notice("⚠️ 未连接到 NAS, 请重新连接后再试");
+      new Notice("⚠️ " + t("TIP_NO_CONNECT"));
       return false
     }
     // console.log('已请求文件同步');

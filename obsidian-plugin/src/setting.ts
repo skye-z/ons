@@ -39,7 +39,7 @@ export class NSSettingTab extends PluginSettingTab {
 			.setName(t("SETTING_PASSWORD"))
 			.setDesc(t("SETTING_PASSWORD_DESC"))
 			.addText(text => text
-				.setPlaceholder('8-24位')
+				.setPlaceholder(t("TIP_PASSWORD"))
 				.setValue(this.plugin.settings.pwd)
 				.onChange(async (value) => {
 					this.plugin.settings.pwd = value;
@@ -71,7 +71,7 @@ export class NSSettingTab extends PluginSettingTab {
 			.addButton(text => text
 				.setButtonText("Start")
 				.onClick(async () => {
-					new Notice("开始测试, 请留意右上角提示与右下角的状态")
+					new Notice(t("TIP_TEST"))
 					this.plugin.initPeerManager();
 				}));
 	}
