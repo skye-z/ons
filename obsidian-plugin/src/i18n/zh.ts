@@ -1,11 +1,21 @@
 export default {
     TIP_CONNECTING: "连接中",
-    CMD_MANUAL_UPDATE: "手动更新",
     TIP_MANUAL_UPDATE: "同步正在进行，请稍后再试。",
-    CMD_RECONNECT: "重新连接",
     TIP_SYNC: "正在同步中, 请勿编辑和操作",
     TIP_CONNECTION_DROPPED: "连接已断开",
+    TIP_TEST: "测试开始",
+    TIP_PASSWORD: "8-24位",
+    TIP_CONNECTED: "已连接",
+    TIP_SYNC_END: "同步结束, 数据已是最新",
+    TIP_RECONNECT: "第 %1 次尝试重新连接...",
+    TIP_NO_CONNECT: "未连接到 NAS, 请重新连接后再试",
+    
+    CMD_MANUAL_UPDATE: "手动更新",
+    CMD_RECONNECT: "重新连接",
+
     STATUS_CONNECTION_DROPPED:"已断开",
+    STATUS_CONNECT: "连接失败",
+
     SETTING_CONTROL_SERVER: '中控服务器',
     SETTING_CONTROL_SERVER_DESC: '中控负责登记 NAS 设备, 提供鉴权并促成连接的建立',
     SETTING_NAT_ID: "NAT.ID",
@@ -18,4 +28,14 @@ export default {
     SETTING_BACKUP_STUN_DESC: "当主信令服务器不可用时作为备用",
     SETTING_TEST: "连接测试",
     SETTING_TEST_DESC: "配置完成后可使用此功能测试配置是否正确",
+    
+    ERR_PASSWORD: "连接密码错误",
+    ERR_PROTOCOL: "协议无法对齐",
+    ERR_ADD_TYPE: "不支持的接入类型",
+    ERR_MESSAGE_TYPE: "不支持的消息类型",
+    ERR_NO_DEVICE: "设备不存在",
+    ERR_COMMANDS: "不支持的指令",
+    ERR_NO_MESSAGE: "未能读取到消息内容",
+    ERR_MESSAGE_FORMAT: "不支持的消息格式",
+    ERR_OFFLINE: "已离线"
 }

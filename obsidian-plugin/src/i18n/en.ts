@@ -1,11 +1,21 @@
 export default {
     TIP_CONNECTING: "Connecting...",
-    CMD_MANUAL_UPDATE: "Manual update",
     TIP_MANUAL_UPDATE: "Syncing, please wait.",
-    CMD_RECONNECT: "Reconnect",
     TIP_SYNC: "Syncing, please do not operate",
     TIP_CONNECTION_DROPPED: "Connection dropped",
+    TIP_TEST: "Test start",
+    TIP_PASSWORD: "8-24 characters",
+    TIP_CONNECTED: "Connected",
+    TIP_SYNC_END: "Sync completed, data is now up-to-date",
+    TIP_RECONNECT: "%1 attempts to reconnect",
+    TIP_NO_CONNECT: "Not connected, please reconnect and try again",
+    
+    CMD_MANUAL_UPDATE: "Manual update",
+    CMD_RECONNECT: "Reconnect",
+
     STATUS_CONNECTION_DROPPED:"Disconnected",
+    STATUS_CONNECT: "Connection failed",
+
     SETTING_CONTROL_SERVER: 'Central control server',
     SETTING_CONTROL_SERVER_DESC: 'Registers NAS devices, authenticates and connects',
     SETTING_NAT_ID: "NAT.ID",
@@ -18,4 +28,14 @@ export default {
     SETTING_BACKUP_STUN_DESC: "Serves as a backup when the primary signaling is unavailable",
     SETTING_TEST: "Connection test",
     SETTING_TEST_DESC: "Use this to test if the configuration is correct",
+    
+    ERR_PASSWORD: "Connection password error",
+    ERR_PROTOCOL: "Protocol cannot be aligned",
+    ERR_ADD_TYPE: "Unsupported access type",
+    ERR_MESSAGE_TYPE: "Unsupported message type",
+    ERR_NO_DEVICE: "Device does not exist",
+    ERR_COMMANDS: "Unsupported commands",
+    ERR_NO_MESSAGE: "Failed to read message content",
+    ERR_MESSAGE_FORMAT: "Unsupported message format",
+    ERR_OFFLINE: "Offline already"
 }
