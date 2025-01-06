@@ -12,7 +12,7 @@ hero:
   actions:
     - theme: brand
       text: 快速开始
-      link: /guide/start
+      link: /zh/guide/start
     - theme: alt
       text: Github
       link: https://github.com/skye-z/ons

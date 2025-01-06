@@ -12,6 +12,16 @@ It consists of three parts:
 
 The **Central Control Server** can be used as `ons.betax.dev` or deployed on your own cloud server.
 
+## Compare Other Sync Solutions
+
+| Item | ONS | Sync | iCloud | WebDAV(云) | WebDAV(自) | SMB |
+| -------- | ---- | ---- | ------ | ---------- | --------- | --- |
+| Desc     | P2P NAS sync| Official sync| Apple cloud | 3rd-party cloud| Self-built storage| Disk mount|
+| Cost     | One-time HW + monthly net| $5/month   | 50GB ¥6/month | ¥10~¥30/month| One-time HW + monthly net| One-time HW + monthly net|
+| Pros     | Private data, low long-term cost | Version control, selective sync, easy setup | Fast, cheap space, cross-platform | Cheap space, cross-platform | Private data, low long-term cost | Private data, low long-term cost |
+| Cons     | Need NAS, high initial cost, NAT support needed | Small space, expensive | Best experience with full Apple suite | Data security concerns, unstable service | High initial cost, public IP or tunnel required | High initial cost, public IP or tunnel required |
+| Suitable | Home NAS without public IP | Needs stable service, version control, price-insensitive | Full Apple device users | Using cloud storage or very price-sensitive | Home NAS with public IP or tunnel | Home NAS with public IP or tunnel |
+
 ## Use Case
 
 After surveying the habits of Obsidian users, ONS identified its core use case:
